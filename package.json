@@ -1,0 +1,63 @@
+{
+  "name": "umich-dining-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for University of Michigan Ann Arbor dining halls: menus, traits, allergens, nutrition and hours",
+  "type": "module",
+  "license": "MIT",
+  "mcpName": "io.github.esreddy2/umich-dining-mcp",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/esreddy2/UMich-dining-mcp.git"
+  },
+  "homepage": "https://github.com/esreddy2/UMich-dining-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/esreddy2/UMich-dining-mcp/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "university-of-michigan",
+    "umich",
+    "michigan-dining",
+    "dining-halls",
+    "ann-arbor"
+  ],
+  "author": "esreddy2",
+  "engines": {
+    "node": ">=20.18.1"
+  },
+  "bin": {
+    "umich-dining-mcp": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:live": "LIVE=1 vitest run --config vitest.live.config.ts",
+    "start": "node dist/index.js",
+    "capture": "tsx scripts/capture-fixtures.ts",
+    "capture:date": "tsx scripts/capture-fixtures.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.3.1",
+    "cheerio": "^1.2.0",
+    "domhandler": "^5.0.3",
+    "zod": "^4.2.0"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "^2.3.1",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.0.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^3.2.0"
+  }
+}
