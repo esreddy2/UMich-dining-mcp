@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.esreddy2/umich-dining-mcp",
+  "description": "Menus, traits, allergens, nutrition and hours of the ten University of Michigan dining halls.",
+  "title": "UMich Dining",
+  "repository": {
+    "type": "github",
+    "url": "https://github.com/esreddy2/UMich-dining-mcp"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "umich-dining-mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "runtimeHint": "npx"
+    }
+  ]
+}
