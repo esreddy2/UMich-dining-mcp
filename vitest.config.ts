@@ -11,6 +11,7 @@ export default defineConfig({
     env: {
       UMICH_DINING_MIN_GAP_MS: '0',
       UMICH_DINING_MAX_CONCURRENCY: '8',
+      UMICH_DINING_RETRY_BASE_MS: '1',
     },
   },
 });

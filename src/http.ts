@@ -24,13 +24,17 @@ export class BlockedError extends HttpError {
   }
 }
 
-const CLOUDFLARE_MARKERS = ['just a moment', 'checking your browser', 'cf-browser-verification', 'enable javascript and cookies'];
+const CLOUDFLARE_MARKERS = ['cf-browser-verification', 'cf_chl_opt', 'challenge-platform', '__cf_chl_'];
 
 export function looksBlocked(html: string): boolean {
   const head = html.slice(0, 4000).toLowerCase();
-  if (head.includes('cf-browser-verification') || head.includes('cf_chl_opt')) return true;
-  if (head.includes('just a moment') && !head.includes('mdining-items')) return true;
-  return CLOUDFLARE_MARKERS.some((marker) => head.includes(marker));
+  if (CLOUDFLARE_MARKERS.some((marker) => head.includes(marker))) return true;
+  const title = /<title[^>]*>(.*?)<\/title>/i.exec(head)?.[1]?.toLowerCase() ?? '';
+  return (
+    title.includes('just a moment') ||
+    title.includes('attention required') ||
+    title.includes('access denied')
+  );
 }
 
 let workingUserAgent: string | null = null;
