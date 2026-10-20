@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cache } from '../src/cache.js';
-import { ServiceError, getMenu, todayIn, validateDate } from '../src/service.js';
+import { ServiceError, countItems, getMenu, todayIn, validateDate } from '../src/service.js';
 import { readFixture } from './helpers.js';
 
 const MONTH_NAMES = [
@@ -91,8 +91,8 @@ describe('date handling', () => {
     );
 
     const page = await getMenu('bursley', today);
-    expect(page.renderedDate).toBe(today);
-    expect(page.menu.itemCount).toBe(66);
+    expect(page.menu.renderedDate).toBe(today);
+    expect(countItems(page.menu.meals)).toBe(66);
   });
 
   it('fails when no menu is published for the day', async () => {

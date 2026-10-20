@@ -12,8 +12,10 @@ import type {
   HallHours,
   LocationSummary,
   MealName,
+  Menu,
   RegularHours,
   ServicePeriod,
+  Station,
 } from './types.js';
 import { ALLERGEN_CAVEAT } from './taxonomy.js';
 
@@ -61,11 +63,26 @@ export interface DishFilterResult {
 interface HallPage {
   hall: DiningHall;
   date: string;
-  menu: ParsedMenu;
+  menu: Menu;
   location: LocationDetails;
   periods: ServicePeriod[];
-  renderedDate: string | null;
   stale: boolean;
+}
+
+/** The number of dishes of a menu. */
+export function countItems(meals: Record<MealName, Station[]>): number {
+  let total = 0;
+  for (const stations of Object.values(meals)) {
+    for (const station of stations) total += station.items.length;
+  }
+  return total;
+}
+
+/** The number of stations of a menu. */
+export function countStations(meals: Record<MealName, Station[]>): number {
+  let total = 0;
+  for (const stations of Object.values(meals)) total += stations.length;
+  return total;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -167,30 +184,31 @@ export async function loadHallPage(
 
   const { value, stale } = await cache.fetch(key, ttl, async () => {
     const html = await fetchText(menuUrl(hall, date));
-    let menu: ParsedMenu;
+    let parsed: ParsedMenu;
     let location: LocationDetails;
     let periods: ServicePeriod[];
     try {
       const $ = load(html);
-      menu = parseMenuPage(html);
+      parsed = parseMenuPage(html);
       location = parseLocationDetails($);
       periods = parseTodaysHours($);
     } catch (error) {
       if (error instanceof ParseError) throw new ServiceError(error.message);
       throw error;
     }
-    return { menu, location, periods };
+    return { parsed, location, periods };
   });
 
-  return {
-    hall,
+  const menu: Menu = {
+    hall: hall.id,
     date,
-    menu: value.menu,
-    location: value.location,
-    periods: value.periods,
-    renderedDate: value.menu.renderedDate,
+    meals: value.parsed.meals,
+    mealLabels: value.parsed.mealLabels,
+    renderedDate: value.parsed.renderedDate,
     stale,
   };
+
+  return { hall, date, menu, location: value.location, periods: value.periods, stale };
 }
 
 /**
@@ -208,14 +226,14 @@ export async function getMenu(hallId: HallId, date?: string): Promise<HallPage> 
 
   const page = await loadHallPage(hallId, requested, today);
 
-  if (page.renderedDate && page.renderedDate !== requested) {
+  if (page.menu.renderedDate && page.menu.renderedDate !== requested) {
     throw new ServiceError(
-      `The site returned the menu for ${page.renderedDate} when ${requested} was requested. ` +
+      `The site returned the menu for ${page.menu.renderedDate} when ${requested} was requested. ` +
         'The published range may have changed; try a date within the range the site offers.',
     );
   }
 
-  if (page.menu.itemCount === 0) {
+  if (countItems(page.menu.meals) === 0) {
     throw new ServiceError(`No menu is published for ${requested} at ${page.hall.name}.`);
   }
 
@@ -300,9 +318,9 @@ export async function listLocations(date?: string): Promise<{
   return { date: requested, locations, failures };
 }
 
-function publishedMeals(menu: ParsedMenu): MealName[] {
+function publishedMeals(menu: Menu): MealName[] {
   const meals: MealName[] = [];
-  for (const [meal, stations] of Object.entries(menu.meals) as [MealName, { items: unknown[] }[]][]) {
+  for (const [meal, stations] of Object.entries(menu.meals) as [MealName, Station[]][]) {
     if (stations.length > 0) meals.push(meal);
   }
   return meals;

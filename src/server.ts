@@ -287,7 +287,7 @@ export function createServer(): McpServer {
           date: page.date,
           mealLabels: page.menu.mealLabels,
           meals,
-          renderedDate: page.renderedDate,
+          renderedDate: page.menu.renderedDate,
           totalStations,
           totalItems,
           stale: page.stale,

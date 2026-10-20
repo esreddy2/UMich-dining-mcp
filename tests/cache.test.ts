@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TtlCache } from '../src/cache.js';
 import { cache } from '../src/cache.js';
-import { getMenu, listLocations } from '../src/service.js';
+import { countItems, getMenu, listLocations } from '../src/service.js';
 import { mockFixtureFetch, readFixture } from './helpers.js';
 
 describe('cache', () => {
@@ -16,7 +16,7 @@ describe('cache', () => {
 
     expect(mock.calls).toHaveLength(1);
     for (const page of pages) {
-      expect(page.menu.itemCount).toBe(66);
+      expect(countItems(page.menu.meals)).toBe(66);
     }
   });
 
