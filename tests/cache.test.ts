@@ -16,7 +16,7 @@ describe('cache', () => {
 
     expect(mock.calls).toHaveLength(1);
     for (const page of pages) {
-      expect(countItems(page.menu.meals)).toBe(66);
+      expect(countItems(page.menu.meals)).toBe(69);
     }
   });
 

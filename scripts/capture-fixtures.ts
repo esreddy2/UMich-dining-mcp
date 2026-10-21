@@ -6,7 +6,11 @@
  * network; run this script when the site's HTML changes.
  *
  *   npm run capture                 # today
- *   npm run capture -- 2026-10-20   # a specific date
+ *   npm run capture -- 2026-10-22   # a specific date
+ *
+ * The date is written to `tests/fixtures/capture-date.txt`, which the oracle
+ * and the tests read, so the fixtures and the expected data always agree on
+ * which day they describe.
  */
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
@@ -39,6 +43,7 @@ async function main(): Promise<void> {
   }
 
   await capture(`${config.baseUrl}${REGULAR_HOURS_PATH}`, join(FIXTURE_DIR, 'regularhours.html'));
+  await writeFile(join(FIXTURE_DIR, 'capture-date.txt'), `${date}\n`, 'utf-8');
   process.stderr.write(`fixtures captured for ${date}\n`);
 }
 

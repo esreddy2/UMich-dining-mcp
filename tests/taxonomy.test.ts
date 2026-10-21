@@ -129,7 +129,7 @@ describe('taxonomy', () => {
     const html = readFixture('bursley.html');
     const panelSoy = (html.match(/allergen-soy/g) ?? []).length;
     expect(panelSoy).toBeGreaterThan(soy);
-    expect(soy).toBe(25);
+    expect(soy).toBe(30);
   });
 
   it('uses the canonical allergen slugs only', () => {
