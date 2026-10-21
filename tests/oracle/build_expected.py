@@ -30,6 +30,12 @@ FIXTURE_DIR = os.path.join(TESTS_DIR, "fixtures")
 EXPECTED_DIR = os.path.join(FIXTURE_DIR, "expected")
 SNAPSHOT_DIR = os.path.join(TESTS_DIR, "snapshots")
 
+
+def capture_date() -> str:
+    """The day the committed fixtures were captured for."""
+    with open(os.path.join(FIXTURE_DIR, "capture-date.txt"), encoding="utf-8") as handle:
+        return handle.read().strip()
+
 VOID_ELEMENTS = {
     "area", "base", "br", "col", "embed", "hr", "img", "input", "link",
     "meta", "param", "source", "track", "wbr",
@@ -609,7 +615,7 @@ def parse_regular_hours(path: str) -> dict:
 
 
 def snapshot_of(halls: dict[str, dict]) -> dict:
-    snapshot = {"capturedFor": "2026-10-20", "halls": {}}
+    snapshot = {"capturedFor": capture_date(), "halls": {}}
     for hall, data in halls.items():
         meals: dict[str, int] = {label: 0 for label in MEAL_LABELS}
         dish_lines: list[str] = []

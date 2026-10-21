@@ -34,4 +34,6 @@ python3 tests/oracle/build_expected.py --check    # fail when it is out of date
 npm run test:oracle                                # the same check
 ```
 
-Run it after every capture of new fixtures.
+Run it after every capture of new fixtures. The day the fixtures were captured for is read
+from `tests/fixtures/capture-date.txt` and written into the snapshot, so the oracle and the
+test suite always name the same day.

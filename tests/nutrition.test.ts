@@ -53,7 +53,7 @@ describe('nutrition parser', () => {
     const items = bursleyItems();
     const withNutrition = items.filter((item) => item.nutrition !== null);
     const without = items.filter((item) => item.nutrition === null);
-    expect(withNutrition.length).toBe(64);
+    expect(withNutrition.length).toBe(67);
     expect(without.length).toBe(2);
   });
 

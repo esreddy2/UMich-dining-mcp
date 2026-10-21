@@ -124,8 +124,17 @@ function mealHeadings(markup: string): string[] {
   return [...block.matchAll(/<h3[^>]*>([\s\S]*?)<\/h3>/g)].map((match) => text(match[1] ?? ''));
 }
 
-/** The three headings of the page that are not stations. */
-const PAGE_HEADINGS = ["Today's Hours", 'Special Diets', 'MyNutrition'];
+/** The headings of the page that are not stations. */
+const PAGE_HEADINGS = ['Special Diets', 'MyNutrition'];
+
+/**
+ * The heading of the hours block names the day the page shows: "Today's
+ * Hours" for the current day, "Thursday's Hours" for another one. It is
+ * matched by its ending, because the day in it changes with the capture.
+ */
+function isPageHeading(heading: string): boolean {
+  return PAGE_HEADINGS.includes(heading) || /Hours$/.test(heading);
+}
 
 type NutrientField =
   | 'totalFat'
@@ -220,7 +229,7 @@ describe('the parser against the raw markup', () => {
         // may serve the same station in more than one meal, so the two lists
         // are compared as they are, duplicates included.
         const stationHeadingsOfPage = headings.filter(
-          (heading) => !PAGE_HEADINGS.includes(heading),
+          (heading) => !isPageHeading(heading),
         );
         expect(stationsOfPage).toEqual(stationHeadingsOfPage);
       });
@@ -316,7 +325,7 @@ describe('the parser against the raw markup', () => {
     });
   }
 
-  it('reads 448 dishes and 438 panels across the ten halls', () => {
+  it('reads 562 dishes and 550 panels across the ten halls', () => {
     let dishes_ = 0;
     let panels = 0;
     for (const fixture of Object.values(HALL_FIXTURES)) {
@@ -326,7 +335,7 @@ describe('the parser against the raw markup', () => {
       panels += parsed.filter((dish) => dish.nutrition !== null).length;
       expect(parsed).toHaveLength(itemNames(html).length);
     }
-    expect(dishes_).toBe(448);
-    expect(panels).toBe(438);
+    expect(dishes_).toBe(562);
+    expect(panels).toBe(550);
   });
 });

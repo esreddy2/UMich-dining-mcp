@@ -224,8 +224,8 @@ describe('the parser against the independently expected data', () => {
         }
       }
     }
-    expect(items).toBe(448);
-    expect(stations).toBe(149);
-    expect(panels).toBe(438);
+    expect(items).toBe(562);
+    expect(stations).toBe(189);
+    expect(panels).toBe(550);
   });
 });

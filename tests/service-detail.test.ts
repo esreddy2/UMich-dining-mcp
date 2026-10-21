@@ -147,13 +147,13 @@ describe('the menus of the halls', () => {
     }
   });
 
-  it('reads 448 dishes over the ten halls', async () => {
+  it('reads 562 dishes over the ten halls', async () => {
     let total = 0;
     for (const hall of Object.keys(HALL_FIXTURES)) {
       const page = await getMenu(hall as never);
       total += countItems(page.menu.meals);
     }
-    expect(total).toBe(448);
+    expect(total).toBe(562);
   });
 
   it('reports the contact details of every hall', async () => {
@@ -337,10 +337,12 @@ describe('the filters of the dishes', () => {
     }
   });
 
-  it('returns every dish of the site when it is asked for all of them', async () => {
+  it('counts every dish of the site and returns the first 500', async () => {
+    // The service caps a list of matches at 500 dishes; the total is the
+    // number of dishes that match, not the number that are returned.
     const all = await filterDishes({ limit: 500 });
     expect(all.totalMatches).toBe(ALL_DISHES.length);
-    expect(all.matches).toHaveLength(ALL_DISHES.length);
+    expect(all.matches).toHaveLength(500);
   });
 
   it('cuts the matches at the limit but counts them all', async () => {
@@ -396,9 +398,9 @@ describe('the nutrition panel of a dish', () => {
   });
 
   it('reports the dish of a name the hall serves twice', async () => {
-    // "Tortilla Chips" is served in two meals of Bursley under the same name.
-    const result = await getItemNutrition('bursley', 'Tortilla Chips');
-    expect(result.name).toBe('Tortilla Chips');
+    // "Cheese Pizza" is served in two meals of Bursley under the same name.
+    const result = await getItemNutrition('bursley', 'Cheese Pizza');
+    expect(result.name).toBe('Cheese Pizza');
     expect(result.meal).toMatch(/^(Breakfast|Lunch|Dinner)$/);
   });
 

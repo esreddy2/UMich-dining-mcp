@@ -98,7 +98,7 @@ describe('server', () => {
     };
     expect(payload.hall).toBe('bursley');
     expect(payload.totalStations).toBe(22);
-    expect(payload.totalItems).toBe(66);
+    expect(payload.totalItems).toBe(69);
     expect(Object.keys(payload.meals).sort()).toEqual(['Breakfast', 'Dinner', 'Lunch']);
   });
 
