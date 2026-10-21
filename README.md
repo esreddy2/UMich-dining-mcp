@@ -1,8 +1,11 @@
 # umich-dining-mcp
 
+[![CI](https://github.com/esreddy2/UMich-dining-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/esreddy2/UMich-dining-mcp/actions/workflows/ci.yml)
+[![Live site](https://github.com/esreddy2/UMich-dining-mcp/actions/workflows/live.yml/badge.svg)](https://github.com/esreddy2/UMich-dining-mcp/actions/workflows/live.yml)
+
 An MCP server that answers questions about the **dining halls** of the University of
 Michigan in Ann Arbor: what is being served, which dishes are vegan or halal, what a dish
-contains, how calorie content, and when each hall is open.
+contains, how many calories it has, and when each hall is open.
 
 All data comes live from [dining.umich.edu](https://dining.umich.edu), the university's own
 dining site. Nothing is mirrored or cached on disk.
