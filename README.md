@@ -245,6 +245,14 @@ npm run test:live            # the network-gated tests
 After the site changes its HTML, re-capture the fixtures, rebuild the expected data with the
 oracle, update this table, and the parsers will tell you what moved.
 
+### The checks on GitHub
+
+Every push runs the checks in `.github/workflows/ci.yml`, one job each, so a failure names
+the part that broke: the typecheck, the lint, the tests (on Node 20 and on Node 22), the
+oracle and the build of the package. The live tests live in
+`.github/workflows/live.yml`: they read the real site, so they run when the published branch
+changes, once a day, and on demand, and they are kept out of the checks of the code.
+
 ## Contact
 
 Questions, bug reports or a request to use a different User-Agent: open an issue at
