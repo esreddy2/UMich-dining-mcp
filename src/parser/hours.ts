@@ -45,11 +45,16 @@ function parsePeriods(cellHtml: string): ServicePeriod[] {
       continue;
     }
     const separator = line.indexOf(':');
-    if (separator < 0) {
+    // A label is a word and a time is not: the site writes the periods of
+    // the dining halls as "Breakfast: 7:00 am - 10:30 am" and the periods of
+    // the other locations as a plain "10:00 am - 10:00 pm".  A line that
+    // starts with a number is a time and is never cut at the colon of the
+    // time itself.
+    const label = separator < 0 ? '' : line.slice(0, separator).trim();
+    if (!label || /\d/.test(label)) {
       periods.push({ label: '', times: line, closed: false });
       continue;
     }
-    const label = line.slice(0, separator).trim();
     const times = line.slice(separator + 1).trim();
     periods.push({ label, times, closed: false });
   }
