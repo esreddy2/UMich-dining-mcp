@@ -20,22 +20,22 @@ dining site. Nothing is mirrored or cached on disk.
 
 ## Install
 
-The package is not published yet, so install it from the repository for now:
+The package is on npm:
 
 ```bash
-npm install -g github:esreddy2/UMich-dining-mcp
+npm install -g umich-dining-mcp
 ```
 
-or run it straight from the repository:
+or run it straight from npm:
 
 ```bash
-npx github:esreddy2/UMich-dining-mcp
+npx -y umich-dining-mcp
 ```
 
 ### Claude Code
 
 ```bash
-claude mcp add umich-dining -- npx -y github:esreddy2/UMich-dining-mcp
+claude mcp add umich-dining -- npx -y umich-dining-mcp
 ```
 
 ### Cursor
@@ -47,7 +47,7 @@ Add to `~/.cursor/mcp.json`:
   "mcpServers": {
     "umich-dining": {
       "command": "npx",
-      "args": ["-y", "github:esreddy2/UMich-dining-mcp"]
+      "args": ["-y", "umich-dining-mcp"]
     }
   }
 }
@@ -63,13 +63,15 @@ Add to `.vscode/mcp.json`:
     "umich-dining": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "github:esreddy2/UMich-dining-mcp"]
+      "args": ["-y", "umich-dining-mcp"]
     }
   }
 }
 ```
 
-Once the package is on npm, `npx -y umich-dining-mcp` works the same way.
+The server is also in the
+[MCP registry](https://registry.modelcontextprotocol.io), as
+`io.github.esreddy2/umich-dining-mcp`.
 
 ## Tools
 
