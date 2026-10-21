@@ -2,7 +2,7 @@
 
 An MCP server that answers questions about the **dining halls** of the University of
 Michigan in Ann Arbor: what is being served, which dishes are vegan or halal, what a dish
-contains, how much it weighs in calories, and when each hall is open.
+contains, how calorie content, and when each hall is open.
 
 All data comes live from [dining.umich.edu](https://dining.umich.edu), the university's own
 dining site. Nothing is mirrored or cached on disk.
@@ -12,7 +12,7 @@ dining site. Nothing is mirrored or cached on disk.
 | Transport | stdio |
 | Runtime | Node.js >= 20.18.1 |
 | Source of truth | `dining.umich.edu` only |
-| Scope | the 10 dining halls (no cafés, markets, bakeries, grills, prices or meal plans) |
+| Scope | the 10 dining halls |
 | Data verified on | 2026-10-20 |
 
 ## Install
