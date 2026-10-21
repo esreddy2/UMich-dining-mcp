@@ -1,0 +1,1049 @@
+{
+ "hall": "north-quad",
+ "meals": [
+  {
+   "label": "Dinner",
+   "stations": [
+    {
+     "name": "Signature Blue",
+     "items": [
+      {
+       "name": "Fresh Pico De Gallo",
+       "traitClasses": [
+        "glutenfree",
+        "mhealthy5",
+        "vegan",
+        "carbonlow"
+       ],
+       "allergenClasses": [],
+       "publishedTraits": [
+        {
+         "slug": "glutenfree",
+         "label": "Gluten Free"
+        },
+        {
+         "slug": "mhealthy5",
+         "label": "Nutrient Dense High"
+        },
+        {
+         "slug": "vegan",
+         "label": "Vegan"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "1 oz Serving (28g)",
+         "calories": 8,
+         "micronutrients": {
+          "Vitamin A": "2%",
+          "Vitamin C": "7%",
+          "Calcium": "0%",
+          "Iron": "0%"
+         },
+         "totalFat": "0g",
+         "saturatedFat": "0g",
+         "transFat": null,
+         "cholesterol": null,
+         "sodium": "1mg",
+         "totalCarbohydrate": "2g",
+         "dietaryFiber": "1g",
+         "sugars": "1g",
+         "protein": "0g"
+        }
+       }
+      },
+      {
+       "name": "Shredded Iceberg Lettuce",
+       "traitClasses": [
+        "glutenfree",
+        "mhealthy5",
+        "vegan",
+        "carbonlow"
+       ],
+       "allergenClasses": [],
+       "publishedTraits": [
+        {
+         "slug": "glutenfree",
+         "label": "Gluten Free"
+        },
+        {
+         "slug": "mhealthy5",
+         "label": "Nutrient Dense High"
+        },
+        {
+         "slug": "vegan",
+         "label": "Vegan"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "1 oz Serving (28g)",
+         "calories": 7,
+         "micronutrients": {
+          "Vitamin A": "1%",
+          "Vitamin C": "2%",
+          "Calcium": "1%",
+          "Iron": "0%"
+         },
+         "totalFat": "0g",
+         "saturatedFat": "0g",
+         "transFat": "0g",
+         "cholesterol": "0mg",
+         "sodium": "3mg",
+         "totalCarbohydrate": "1g",
+         "dietaryFiber": "1g",
+         "sugars": "0g",
+         "protein": "1g"
+        }
+       }
+      },
+      {
+       "name": "Guacamole",
+       "traitClasses": [
+        "glutenfree",
+        "mhealthy4",
+        "vegan",
+        "carbonlow"
+       ],
+       "allergenClasses": [],
+       "publishedTraits": [
+        {
+         "slug": "glutenfree",
+         "label": "Gluten Free"
+        },
+        {
+         "slug": "mhealthy4",
+         "label": "Nutrient Dense Medium High"
+        },
+        {
+         "slug": "vegan",
+         "label": "Vegan"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "1 oz Serving (28g)",
+         "calories": 70,
+         "micronutrients": {
+          "Vitamin A": "%",
+          "Vitamin C": "%",
+          "Calcium": "0%",
+          "Iron": "0%"
+         },
+         "totalFat": "6g",
+         "saturatedFat": "1g",
+         "transFat": "0g",
+         "cholesterol": "0mg",
+         "sodium": "120mg",
+         "totalCarbohydrate": "3g",
+         "dietaryFiber": "1g",
+         "sugars": "0g",
+         "protein": "0g"
+        }
+       }
+      },
+      {
+       "name": "Mexican Cheese Blend",
+       "traitClasses": [
+        "glutenfree",
+        "mhealthy3",
+        "vegetarian",
+        "carbonlow"
+       ],
+       "allergenClasses": [
+        "milk"
+       ],
+       "publishedTraits": [
+        {
+         "slug": "glutenfree",
+         "label": "Gluten Free"
+        },
+        {
+         "slug": "mhealthy3",
+         "label": "Nutrient Dense Medium"
+        },
+        {
+         "slug": "vegetarian",
+         "label": "Vegetarian"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "1/8 cup (28g)",
+         "calories": 111,
+         "micronutrients": {
+          "Vitamin A": "0%",
+          "Vitamin C": "0%",
+          "Calcium": "20%",
+          "Iron": "1%"
+         },
+         "totalFat": "9g",
+         "saturatedFat": "5g",
+         "transFat": "0g",
+         "cholesterol": "25mg",
+         "sodium": "172mg",
+         "totalCarbohydrate": "1g",
+         "dietaryFiber": "0g",
+         "sugars": "0g",
+         "protein": "6g"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "name": "24 Carrots",
+     "items": [
+      {
+       "name": "Grilled Portabello Mushroom",
+       "traitClasses": [
+        "glutenfree",
+        "mhealthy5",
+        "vegan",
+        "carbonlow"
+       ],
+       "allergenClasses": [],
+       "publishedTraits": [
+        {
+         "slug": "glutenfree",
+         "label": "Gluten Free"
+        },
+        {
+         "slug": "mhealthy5",
+         "label": "Nutrient Dense High"
+        },
+        {
+         "slug": "vegan",
+         "label": "Vegan"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "Mushroom (96g)",
+         "calories": 112,
+         "micronutrients": {
+          "Vitamin A": "0%",
+          "Vitamin C": "3%",
+          "Calcium": "1%",
+          "Iron": "1%"
+         },
+         "totalFat": "6g",
+         "saturatedFat": "1g",
+         "transFat": "0g",
+         "cholesterol": "0mg",
+         "sodium": "13mg",
+         "totalCarbohydrate": "15g",
+         "dietaryFiber": "1g",
+         "sugars": "10g",
+         "protein": "1g"
+        }
+       }
+      },
+      {
+       "name": "Cilantro Lime White Rice",
+       "traitClasses": [
+        "glutenfree",
+        "mhealthy3",
+        "vegan",
+        "carbonlow"
+       ],
+       "allergenClasses": [],
+       "publishedTraits": [
+        {
+         "slug": "glutenfree",
+         "label": "Gluten Free"
+        },
+        {
+         "slug": "mhealthy3",
+         "label": "Nutrient Dense Medium"
+        },
+        {
+         "slug": "vegan",
+         "label": "Vegan"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "1/2 Cup (85g)",
+         "calories": 117,
+         "micronutrients": {
+          "Vitamin A": "1%",
+          "Vitamin C": "4%",
+          "Calcium": "1%",
+          "Iron": "6%"
+         },
+         "totalFat": "0g",
+         "saturatedFat": "0g",
+         "transFat": "0g",
+         "cholesterol": "0mg",
+         "sodium": "243mg",
+         "totalCarbohydrate": "26g",
+         "dietaryFiber": "0g",
+         "sugars": "1g",
+         "protein": "3g"
+        }
+       }
+      },
+      {
+       "name": "Roasted Green Beans",
+       "traitClasses": [
+        "glutenfree",
+        "mhealthy5",
+        "vegan",
+        "carbonlow"
+       ],
+       "allergenClasses": [],
+       "publishedTraits": [
+        {
+         "slug": "glutenfree",
+         "label": "Gluten Free"
+        },
+        {
+         "slug": "mhealthy5",
+         "label": "Nutrient Dense High"
+        },
+        {
+         "slug": "vegan",
+         "label": "Vegan"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "3 oz Serving (85g)",
+         "calories": 37,
+         "micronutrients": {
+          "Vitamin A": "11%",
+          "Vitamin C": "14%",
+          "Calcium": "3%",
+          "Iron": "4%"
+         },
+         "totalFat": "2g",
+         "saturatedFat": "0g",
+         "transFat": "0g",
+         "cholesterol": "0mg",
+         "sodium": "41mg",
+         "totalCarbohydrate": "5g",
+         "dietaryFiber": "2g",
+         "sugars": "2g",
+         "protein": "2g"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "name": "Halal",
+     "items": [
+      {
+       "name": "Pulled Sriracha Chicken",
+       "traitClasses": [
+        "glutenfree",
+        "halal",
+        "mhealthy3",
+        "carbonmedium"
+       ],
+       "allergenClasses": [
+        "milk"
+       ],
+       "publishedTraits": [
+        {
+         "slug": "glutenfree",
+         "label": "Gluten Free"
+        },
+        {
+         "slug": "halal",
+         "label": "Halal"
+        },
+        {
+         "slug": "mhealthy3",
+         "label": "Nutrient Dense Medium"
+        },
+        {
+         "slug": "carbonmedium",
+         "label": "Carbon Footprint Medium"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "4 Oz (113g)",
+         "calories": 213,
+         "micronutrients": {
+          "Vitamin A": "6%",
+          "Vitamin C": "1%",
+          "Calcium": "2%",
+          "Iron": "5%"
+         },
+         "totalFat": "16g",
+         "saturatedFat": "8g",
+         "transFat": "0g",
+         "cholesterol": "21mg",
+         "sodium": "326mg",
+         "totalCarbohydrate": "3g",
+         "dietaryFiber": "0g",
+         "sugars": "1g",
+         "protein": "16g"
+        }
+       }
+      },
+      {
+       "name": "Cilantro Lime White Rice",
+       "traitClasses": [
+        "glutenfree",
+        "mhealthy3",
+        "vegan",
+        "carbonlow"
+       ],
+       "allergenClasses": [],
+       "publishedTraits": [
+        {
+         "slug": "glutenfree",
+         "label": "Gluten Free"
+        },
+        {
+         "slug": "mhealthy3",
+         "label": "Nutrient Dense Medium"
+        },
+        {
+         "slug": "vegan",
+         "label": "Vegan"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "1/2 Cup (85g)",
+         "calories": 117,
+         "micronutrients": {
+          "Vitamin A": "1%",
+          "Vitamin C": "4%",
+          "Calcium": "1%",
+          "Iron": "6%"
+         },
+         "totalFat": "0g",
+         "saturatedFat": "0g",
+         "transFat": "0g",
+         "cholesterol": "0mg",
+         "sodium": "243mg",
+         "totalCarbohydrate": "26g",
+         "dietaryFiber": "0g",
+         "sugars": "1g",
+         "protein": "3g"
+        }
+       }
+      },
+      {
+       "name": "Cauliflower Chickpea Tacos",
+       "traitClasses": [
+        "glutenfree",
+        "mhealthy4",
+        "spicy",
+        "vegan",
+        "carbonlow"
+       ],
+       "allergenClasses": [],
+       "publishedTraits": [
+        {
+         "slug": "glutenfree",
+         "label": "Gluten Free"
+        },
+        {
+         "slug": "mhealthy4",
+         "label": "Nutrient Dense Medium High"
+        },
+        {
+         "slug": "spicy",
+         "label": "Spicy"
+        },
+        {
+         "slug": "vegan",
+         "label": "Vegan"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "1 Taco (181g)",
+         "calories": 166,
+         "micronutrients": {
+          "Vitamin A": "12%",
+          "Vitamin C": "29%",
+          "Calcium": "7%",
+          "Iron": "15%"
+         },
+         "totalFat": "6g",
+         "saturatedFat": "1g",
+         "transFat": "0g",
+         "cholesterol": "0mg",
+         "sodium": "227mg",
+         "totalCarbohydrate": "25g",
+         "dietaryFiber": "7g",
+         "sugars": "2g",
+         "protein": "5g"
+        }
+       }
+      },
+      {
+       "name": "Taco Shells",
+       "traitClasses": [
+        "glutenfree",
+        "mhealthy3",
+        "vegan",
+        "carbonlow"
+       ],
+       "allergenClasses": [],
+       "publishedTraits": [
+        {
+         "slug": "glutenfree",
+         "label": "Gluten Free"
+        },
+        {
+         "slug": "mhealthy3",
+         "label": "Nutrient Dense Medium"
+        },
+        {
+         "slug": "vegan",
+         "label": "Vegan"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "Shell (10g)",
+         "calories": 47,
+         "micronutrients": {
+          "Vitamin A": "%",
+          "Vitamin C": "%",
+          "Calcium": "1%",
+          "Iron": "0%"
+         },
+         "totalFat": "2g",
+         "saturatedFat": "0g",
+         "transFat": "0g",
+         "cholesterol": "0mg",
+         "sodium": "0mg",
+         "totalCarbohydrate": "6g",
+         "dietaryFiber": "1g",
+         "sugars": "0g",
+         "protein": "1g"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "name": "Vita",
+     "items": [
+      {
+       "name": "Cavatappi",
+       "traitClasses": [
+        "mhealthy3",
+        "vegan",
+        "carbonlow"
+       ],
+       "allergenClasses": [
+        "wheat_barley_rye"
+       ],
+       "publishedTraits": [
+        {
+         "slug": "mhealthy3",
+         "label": "Nutrient Dense Medium"
+        },
+        {
+         "slug": "vegan",
+         "label": "Vegan"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "3 oz Serving (50g)",
+         "calories": 78,
+         "micronutrients": {
+          "Vitamin A": "0%",
+          "Vitamin C": "0%",
+          "Calcium": "0%",
+          "Iron": "4%"
+         },
+         "totalFat": "0g",
+         "saturatedFat": "0g",
+         "transFat": "0g",
+         "cholesterol": "0mg",
+         "sodium": "0mg",
+         "totalCarbohydrate": "16g",
+         "dietaryFiber": "1g",
+         "sugars": "1g",
+         "protein": "3g"
+        }
+       }
+      },
+      {
+       "name": "Marinara Sauce",
+       "traitClasses": [
+        "glutenfree",
+        "mhealthy4",
+        "vegan",
+        "carbonlow"
+       ],
+       "allergenClasses": [],
+       "publishedTraits": [
+        {
+         "slug": "glutenfree",
+         "label": "Gluten Free"
+        },
+        {
+         "slug": "mhealthy4",
+         "label": "Nutrient Dense Medium High"
+        },
+        {
+         "slug": "vegan",
+         "label": "Vegan"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "1/2 Cup (113g)",
+         "calories": 64,
+         "micronutrients": {
+          "Vitamin A": "0%",
+          "Vitamin C": "0%",
+          "Calcium": "2%",
+          "Iron": "5%"
+         },
+         "totalFat": "3g",
+         "saturatedFat": "0g",
+         "transFat": "0g",
+         "cholesterol": "0mg",
+         "sodium": "345mg",
+         "totalCarbohydrate": "10g",
+         "dietaryFiber": "2g",
+         "sugars": "5g",
+         "protein": "2g"
+        }
+       }
+      },
+      {
+       "name": "Roasted Vegetables",
+       "traitClasses": [
+        "glutenfree",
+        "mhealthy5",
+        "vegan",
+        "carbonlow"
+       ],
+       "allergenClasses": [],
+       "publishedTraits": [
+        {
+         "slug": "glutenfree",
+         "label": "Gluten Free"
+        },
+        {
+         "slug": "mhealthy5",
+         "label": "Nutrient Dense High"
+        },
+        {
+         "slug": "vegan",
+         "label": "Vegan"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "3 oz Serving (85g)",
+         "calories": 29,
+         "micronutrients": {
+          "Vitamin A": "55%",
+          "Vitamin C": "57%",
+          "Calcium": "1%",
+          "Iron": "1%"
+         },
+         "totalFat": "1g",
+         "saturatedFat": "0g",
+         "transFat": "0g",
+         "cholesterol": "0mg",
+         "sodium": "70mg",
+         "totalCarbohydrate": "4g",
+         "dietaryFiber": "1g",
+         "sugars": "2g",
+         "protein": "1g"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "name": "Pizziti",
+     "items": [
+      {
+       "name": "BLT Flatbread Pizza",
+       "traitClasses": [
+        "mhealthy2",
+        "carbonlow"
+       ],
+       "allergenClasses": [
+        "eggs",
+        "milk",
+        "pork",
+        "soy",
+        "wheat_barley_rye"
+       ],
+       "publishedTraits": [
+        {
+         "slug": "mhealthy2",
+         "label": "Nutrient Dense Low Medium"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "Slice (74g)",
+         "calories": 250,
+         "micronutrients": {
+          "Vitamin A": "1%",
+          "Vitamin C": "2%",
+          "Calcium": "14%",
+          "Iron": "3%"
+         },
+         "totalFat": "20g",
+         "saturatedFat": "6g",
+         "transFat": "0g",
+         "cholesterol": "35mg",
+         "sodium": "457mg",
+         "totalCarbohydrate": "8g",
+         "dietaryFiber": "1g",
+         "sugars": "0g",
+         "protein": "9g"
+        }
+       }
+      },
+      {
+       "name": "Cheese Flatbread Pizza",
+       "traitClasses": [
+        "mhealthy2",
+        "vegetarian",
+        "carbonlow"
+       ],
+       "allergenClasses": [
+        "milk",
+        "soy",
+        "wheat_barley_rye"
+       ],
+       "publishedTraits": [
+        {
+         "slug": "mhealthy2",
+         "label": "Nutrient Dense Low Medium"
+        },
+        {
+         "slug": "vegetarian",
+         "label": "Vegetarian"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "Slice (47g)",
+         "calories": 113,
+         "micronutrients": {
+          "Vitamin A": "0%",
+          "Vitamin C": "0%",
+          "Calcium": "12%",
+          "Iron": "4%"
+         },
+         "totalFat": "5g",
+         "saturatedFat": "3g",
+         "transFat": "0g",
+         "cholesterol": "15mg",
+         "sodium": "253mg",
+         "totalCarbohydrate": "10g",
+         "dietaryFiber": "1g",
+         "sugars": "1g",
+         "protein": "6g"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "name": "Wild Fire Maize",
+     "items": [
+      {
+       "name": "Yankee Pot Roast",
+       "traitClasses": [
+        "glutenfree",
+        "mhealthy2",
+        "carbonhigh"
+       ],
+       "allergenClasses": [
+        "beef",
+        "soy"
+       ],
+       "publishedTraits": [
+        {
+         "slug": "glutenfree",
+         "label": "Gluten Free"
+        },
+        {
+         "slug": "mhealthy2",
+         "label": "Nutrient Dense Low Medium"
+        },
+        {
+         "slug": "carbonhigh",
+         "label": "Carbon Footprint High"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "4 oz Portion (113g)",
+         "calories": 167,
+         "micronutrients": {
+          "Vitamin A": "2%",
+          "Vitamin C": "1%",
+          "Calcium": "0%",
+          "Iron": "10%"
+         },
+         "totalFat": "12g",
+         "saturatedFat": "5g",
+         "transFat": "0g",
+         "cholesterol": "45mg",
+         "sodium": "526mg",
+         "totalCarbohydrate": "4g",
+         "dietaryFiber": "1g",
+         "sugars": "2g",
+         "protein": "12g"
+        }
+       }
+      },
+      {
+       "name": "Garlicky Mashed Potatoes",
+       "traitClasses": [
+        "glutenfree",
+        "mhealthy1",
+        "vegetarian",
+        "carbonlow"
+       ],
+       "allergenClasses": [
+        "milk"
+       ],
+       "publishedTraits": [
+        {
+         "slug": "glutenfree",
+         "label": "Gluten Free"
+        },
+        {
+         "slug": "mhealthy1",
+         "label": "Nutrient Dense Low"
+        },
+        {
+         "slug": "vegetarian",
+         "label": "Vegetarian"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "1/2 Cup (113g)",
+         "calories": 131,
+         "micronutrients": {
+          "Vitamin A": "4%",
+          "Vitamin C": "22%",
+          "Calcium": "3%",
+          "Iron": "0%"
+         },
+         "totalFat": "5g",
+         "saturatedFat": "3g",
+         "transFat": "0g",
+         "cholesterol": "13mg",
+         "sodium": "205mg",
+         "totalCarbohydrate": "19g",
+         "dietaryFiber": "2g",
+         "sugars": "3g",
+         "protein": "3g"
+        }
+       }
+      },
+      {
+       "name": "Roasted Green Beans",
+       "traitClasses": [
+        "glutenfree",
+        "mhealthy5",
+        "vegan",
+        "carbonlow"
+       ],
+       "allergenClasses": [],
+       "publishedTraits": [
+        {
+         "slug": "glutenfree",
+         "label": "Gluten Free"
+        },
+        {
+         "slug": "mhealthy5",
+         "label": "Nutrient Dense High"
+        },
+        {
+         "slug": "vegan",
+         "label": "Vegan"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "3 oz Serving (85g)",
+         "calories": 37,
+         "micronutrients": {
+          "Vitamin A": "11%",
+          "Vitamin C": "14%",
+          "Calcium": "3%",
+          "Iron": "4%"
+         },
+         "totalFat": "2g",
+         "saturatedFat": "0g",
+         "transFat": "0g",
+         "cholesterol": "0mg",
+         "sodium": "41mg",
+         "totalCarbohydrate": "5g",
+         "dietaryFiber": "2g",
+         "sugars": "2g",
+         "protein": "2g"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "name": "MBakery",
+     "items": [
+      {
+       "name": "Chocolate Chunk Cookies",
+       "traitClasses": [
+        "mhealthy1",
+        "vegetarian",
+        "carbonlow"
+       ],
+       "allergenClasses": [
+        "eggs",
+        "milk",
+        "soy",
+        "wheat_barley_rye"
+       ],
+       "publishedTraits": [
+        {
+         "slug": "mhealthy1",
+         "label": "Nutrient Dense Low"
+        },
+        {
+         "slug": "vegetarian",
+         "label": "Vegetarian"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "Cookie (35g)",
+         "calories": 152,
+         "micronutrients": {
+          "Vitamin A": "4%",
+          "Vitamin C": "0%",
+          "Calcium": "1%",
+          "Iron": "6%"
+         },
+         "totalFat": "7g",
+         "saturatedFat": "3g",
+         "transFat": "0g",
+         "cholesterol": "5mg",
+         "sodium": "117mg",
+         "totalCarbohydrate": "21g",
+         "dietaryFiber": "1g",
+         "sugars": "13g",
+         "protein": "2g"
+        }
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "todayHours": [
+  {
+   "label": "Dinner",
+   "times": "4:30 pm - 8:00 pm"
+  }
+ ],
+ "location": {
+  "address": "105 South State, Ann Arbor, MI, 48109",
+  "phone": "734-764-0170",
+  "email": "dining-northquad@umich.edu",
+  "mapUrl": "https://www.google.com/maps/place/105+South+State%2C+Ann+Arbor%2C+MI%2C+48109"
+ },
+ "counts": {
+  "meals": 1,
+  "stations": 7,
+  "items": 20,
+  "panels": 20
+ },
+ "source": {
+  "itemNameSpans": 20,
+  "nutritionDivs": 20,
+  "nutritionTables": 20
+ }
+}
