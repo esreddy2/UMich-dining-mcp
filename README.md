@@ -1,33 +1,31 @@
 # umich-dining-mcp
 
+[![npm](https://img.shields.io/npm/v/umich-dining-mcp?style=flat&logo=npm&logoColor=cb3837&logoSize=20)](https://www.npmjs.com/package/umich-dining-mcp)
 [![CI](https://github.com/esreddy2/UMich-dining-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/esreddy2/UMich-dining-mcp/actions/workflows/ci.yml)
 [![Live site](https://github.com/esreddy2/UMich-dining-mcp/actions/workflows/live.yml/badge.svg)](https://github.com/esreddy2/UMich-dining-mcp/actions/workflows/live.yml)
-[![npm](https://img.shields.io/npm/v/umich-dining-mcp?style=flat&logo=npm&logoColor=cb3837&logoSize=20)](https://www.npmjs.com/package/umich-dining-mcp)
 
-An MCP server that answers questions about the **dining halls** of the University of
-Michigan in Ann Arbor: what is being served, which dishes are vegan or halal, what a dish
-contains, how many calories it has, and when each hall is open.
+An MCP server for the dining halls of the University of Michigan in Ann Arbor. It answers
+what is being served, which dishes are vegan or halal, what a dish contains, how many
+calories it has, and when each hall is open.
 
-All data comes live from [dining.umich.edu](https://dining.umich.edu), the university's own
-dining site. Nothing is mirrored or cached on disk.
+Every answer is read live from [dining.umich.edu](https://dining.umich.edu). Pages are kept
+in memory for a few minutes so that ten questions cost one visit, but nothing is written to
+disk and no menu is mirrored.
 
 | | |
 |---|---|
 | Transport | stdio |
-| Runtime | Node.js >= 20.18.1 |
-| Source of truth | `dining.umich.edu` only |
-| Scope | the 10 dining halls |
-| Data verified on | 2026-10-20 |
+| Runtime | Node.js 20.18.1 or newer |
+| Halls | the ten dining halls |
+| Registry | [`io.github.esreddy2/umich-dining-mcp`](https://registry.modelcontextprotocol.io) |
 
 ## Install
-
-The package is on npm:
 
 ```bash
 npm install -g umich-dining-mcp
 ```
 
-or run it straight from npm:
+or run it without installing anything:
 
 ```bash
 npx -y umich-dining-mcp
@@ -41,7 +39,7 @@ claude mcp add umich-dining -- npx -y umich-dining-mcp
 
 ### Cursor
 
-Add to `~/.cursor/mcp.json`:
+`~/.cursor/mcp.json`:
 
 ```json
 {
@@ -56,7 +54,7 @@ Add to `~/.cursor/mcp.json`:
 
 ### VS Code
 
-Add to `.vscode/mcp.json`:
+`.vscode/mcp.json`:
 
 ```json
 {
@@ -70,9 +68,8 @@ Add to `.vscode/mcp.json`:
 }
 ```
 
-The server is also in the
-[MCP registry](https://registry.modelcontextprotocol.io), as
-`io.github.esreddy2/umich-dining-mcp`.
+Any other client that starts MCP servers over stdio takes the same `mcpServers` entry as
+Cursor, with `npx -y umich-dining-mcp` as the command.
 
 ## Tools
 
@@ -93,48 +90,41 @@ The server is also in the
 | `umich://dining-halls` | The hall registry as JSON. |
 | `umich://taxonomy` | The 15 allergens and 14 traits with their display labels, the trait implication closure and the allergen caveat. |
 
-### Examples
+### Example questions
 
 ```
-> What is serving at Bursley for dinner tonight?
+What is serving at Bursley for dinner tonight?
 
-> Which halls are open right now?
+Which halls are open right now?
 
-> Find vegan dishes at South Quad that do not contain soy.
+Find vegan dishes at South Quad that do not contain soy.
 
-> What are the ingredients of the Oatmeal at Bursley? How many calories?
+What are the ingredients of the Oatmeal at Bursley? How many calories?
 
-> When is Markley open on Saturday?
+When is Markley open on Saturday?
 
-> Show me dishes with more than 500 mg of sodium.
+Show me dishes with more than 500 mg of sodium.
 ```
 
-## The ten halls
+## The halls
 
-| id | Hall | Meals published on 2026-10-20 | Stations | Dishes |
-|---|---|---|---|---|
-| `bursley` | Bursley | Breakfast, Lunch, Dinner | 22 | 66 |
-| `east-quad` | East Quad | Dinner | 9 | 40 |
-| `markley` | Markley | Dinner | 6 | 14 |
-| `mosher-jordan` | Mosher-Jordan | Breakfast, Lunch, Dinner | 21 | 65 |
-| `north-quad` | North Quad | Dinner | 7 | 20 |
-| `south-quad` | South Quad | Breakfast, Lunch, Dinner | 28 | 94 |
-| `twigs-at-oxford` | Twigs at Oxford | Dinner | 5 | 17 |
-| `wolverine-village` | Wolverine Village | Breakfast, Lunch, Dinner | 31 | 97 |
-| `lawyers-club` | Lawyers Club | Lunch, Dinner | 12 | 23 |
-| `martha-cook` | Martha Cook | Dinner | 8 | 12 |
+| id | Hall | id | Hall |
+|---|---|---|---|
+| `bursley` | Bursley | `south-quad` | South Quad |
+| `east-quad` | East Quad | `twigs-at-oxford` | Twigs at Oxford |
+| `markley` | Markley | `wolverine-village` | Wolverine Village |
+| `mosher-jordan` | Mosher-Jordan | `lawyers-club` | Lawyers Club |
+| `north-quad` | North Quad | `martha-cook` | Martha Cook |
 
-448 dishes in total. The counts are a regression lock: `tests/menu.test.ts` fails when the
-site changes shape.
+The id is what `get_menu`, `get_hours` and `search_dishes` expect.
 
 ## Dates
 
-The site's own datepicker is bounded at **today - 3 days** and **today + 14 days**. Outside
-that range the site does not answer with an error, it answers with a *different day's menu*,
-so the range is checked before anything is fetched, and a date outside it is refused with a
-message that names the range the site offers. When the page does expose the day it rendered
-(the datepicker the site builds in the browser), that day is compared with the requested one
-and a mismatch is an error rather than wrong data.
+The site publishes menus from **three days ago to fourteen days ahead**. Outside that range
+the site does not answer with an error, it answers with a *different day's menu*, so a date
+outside the range is refused before anything is fetched, with a message that names the range
+the site offers. When the page states which day it rendered, that day is compared with the
+one you asked for and a mismatch is an error rather than a wrong answer.
 
 ## Filters
 
@@ -146,38 +136,24 @@ and a mismatch is an error rather than wrong data.
 | `max_carbon` | Maximum carbon footprint: `low`, `medium` or `high`. |
 | `max_calories`, `max_sodium_mg` | Numeric caps. Dishes without a published value are excluded. |
 
-"Gluten Free" means *made without gluten*, not *safe for someone with coeliac disease*.
-Dishes that are vegan are reported as vegetarian as well, because the site keeps the two
-apart; no other trait implies another (halal does not imply vegetarian, and neither does
-kosher).
-
-## Allergen caveat
+## Allergens
 
 > Allergen data is only as good as the site. The menu page flags the allergens the kitchen
-> reported for a dish, but the data does not distinguish "contains" from "may contain", there
-> are no ingredient lists, and it is not safe to treat a missing flag as an absence of the
-> allergen. The site's own guidance is: *"Look for the signs posted near each food serving
-> area for a list of menu options with allergens highlighted in red."* The "Gluten Free" trait
-> means the dish is made without gluten, not that it is safe for someone with coeliac disease.
-> Dedicated gluten-free pantries exist only at South Quad, East Quad, Mosher-Jordan and Bursley.
+> reported for a dish, but it does not distinguish "contains" from "may contain", there are
+> no ingredient lists, and a missing flag is not an absence of the allergen. The site's own
+> guidance is: *"Look for the signs posted near each food serving area for a list of menu
+> options with allergens highlighted in red."* "Gluten Free" means the dish is made without
+> gluten, not that it is safe for someone with coeliac disease. Dedicated gluten-free
+> pantries exist at South Quad, East Quad, Mosher-Jordan and Bursley.
 
-The caveat is repeated in the description of every tool that can return allergen data and in
-every response that contains it. No tool ever claims that a dish is safe.
+The same caveat is repeated in the description of every tool that returns allergen data and
+in every response that contains it. No tool ever claims that a dish is safe.
 
-## Caching and request etiquette
+Two further points about the traits, because the site is careful about them: a vegan dish is
+reported as vegetarian as well, since the site keeps the two apart, and no other trait
+implies another (halal does not imply vegetarian, and neither does kosher).
 
-This server talks to somebody else's website, so it is deliberately gentle:
-
-* **One User-Agent.** `dining.umich.edu` answers HTTP 200 only for a small set of clients;
-  the default is `python-requests/2.32.3`, which is the only one measured to work (a generic
-  fetch agent and a headless-Chrome agent both get 403). It is not our real identity, it is
-  configurable, and the README says so. Set `UMICH_DINING_USER_AGENT` to use your own.
-* **At most two requests in flight** and **at least 500 ms between requests**.
-* **A TTL cache** with in-flight de-duplication, so ten concurrent questions about the same
-  hall cost one request. Today's menu is cached for 15 minutes, a future menu for 6 hours, a
-  past menu for 24 hours and the regular hours for 24 hours.
-* **Stale on error.** If the site is unreachable and a cached copy exists, the cached copy is
-  served and flagged as stale instead of failing the question.
+## Configuration
 
 | Environment variable | Default | Meaning |
 |---|---|---|
@@ -192,77 +168,25 @@ This server talks to somebody else's website, so it is deliberately gentle:
 | `UMICH_DINING_TTL_PAST_MS` | `86400000` | Cache lifetime of a past menu. |
 | `UMICH_DINING_TTL_REGULAR_HOURS_MS` | `86400000` | Cache lifetime of the weekly schedule. |
 
-## Why not NetNutrition
+## How it treats the site
 
-MDining's own backend (`fss.studentlife.umich.edu/NetNutrition`) was probed live and is
-neither as accurate nor as available as the website, so it is not used:
+`dining.umich.edu` is somebody else's website, so the server stays gentle with it:
 
-| | website | NetNutrition |
-|---|---|---|
-| Bursley menu, today | 66 dishes, 22 stations, 3 meals | a "Start-up Error" page: *"No Menus match the current selection"* |
-| hours | full weekly schedule | "Closed" for all seven days |
-| search | – | a "Start-up Error" page |
-| dishes | posted dishes | also recipe components ("Bread & Butter Pickle") that are not posted dishes |
-| authentication | none | a cookie session: bootstrap GET, then a four-step POST |
-| horizon | today-3 days .. today+14 days | 14 days |
+- **Two requests in flight, 500 ms apart at most.** The limit is global to the process.
+- **A cache with in-flight de-duplication.** Ten questions about the same hall cost one
+  request. Today's menu is cached for 15 minutes, a future menu for 6 hours, a past menu for
+  24 hours and the weekly hours for 24 hours.
+- **Stale on error.** If the site cannot be reached and a cached copy exists, the copy is
+  served and marked as stale instead of failing the question.
+- **One User-Agent.** The site answers HTTP 200 to a small set of clients only;
+  `python-requests/2.32.3` is the one that has been measured to work, while a generic fetch
+  agent and a headless browser both get 403. It is not the server's real identity, which is
+  why it is configurable.
 
-The rule for this server is that the website wins.
+## Contributing
 
-## Development
-
-```bash
-npm install
-npm run typecheck
-npm run lint
-npm test
-npm run build
-npm start
-```
-
-The test suite never touches the network: `tests/fixtures/` holds the live HTML of the ten
-halls and of the regular hours page, captured on 2026-10-20.
-
-The tests are written to catch bugs, not to describe the code. They come in four layers:
-
-| Layer | What it checks | Against what |
-| --- | --- | --- |
-| `tests/expected-data.test.ts` | every meal, station, dish, trait, allergen, tier and nutrition value | the expected data of `tests/fixtures/expected/` |
-| `tests/source-truth.test.ts` | the same facts, re-read | the raw markup of the fixtures, with regular expressions only |
-| `tests/*-detail.test.ts` | nutrition, hours, service and MCP contract | the markup, the site's data and the protocol |
-| `tests/oracle/build_expected.py` | writes the expected data | the fixtures, with its own HTML reader |
-
-The expected data is written by a second implementation of the site reader that shares no
-code with `src/`: it has its own tolerant HTML parser, and it was checked against the live
-rendered pages of all ten halls as well. A test that compares the parser with the expected
-data therefore compares it with the markup of the site, not with itself. The oracle is
-written in Python and is not part of the test run:
-
-```bash
-npm run test:oracle          # fail when the expected data is out of date
-python3 tests/oracle/build_expected.py   # rewrite it after a new capture
-```
-
-```bash
-npm run capture              # re-capture the fixtures for today
-npm run capture -- 2026-10-20
-npm run test:live            # the network-gated tests
-```
-
-After the site changes its HTML, re-capture the fixtures, rebuild the expected data with the
-oracle, update this table, and the parsers will tell you what moved.
-
-### The checks on GitHub
-
-Every push runs the checks in `.github/workflows/ci.yml`, one job each, so a failure names
-the part that broke: the typecheck, the lint, the tests (on Node 20 and on Node 22), the
-oracle and the build of the package. The live tests live in
-`.github/workflows/live.yml`: they read the real site, so they run when the published branch
-changes, once a day, and on demand, and they are kept out of the checks of the code.
-
-## Contact
-
-Questions, bug reports or a request to use a different User-Agent: open an issue at
-<https://github.com/esreddy2/UMich-dining-mcp/issues>.
+Pull requests are welcome. The test suite, the fixtures and the release process are
+described in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
