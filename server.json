@@ -4,7 +4,8 @@
   "description": "Menus, traits, allergens, nutrition and hours of the ten University of Michigan dining halls.",
   "title": "UMich Dining",
   "repository": {
-    "type": "github",
+    "source": "github",
+    "id": "1427583950",
     "url": "https://github.com/esreddy2/UMich-dining-mcp"
   },
   "version": "0.1.0",
