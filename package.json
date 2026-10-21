@@ -1,6 +1,6 @@
 {
   "name": "umich-dining-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server for University of Michigan Ann Arbor dining halls: menus, traits, allergens, nutrition and hours",
   "type": "module",
   "license": "MIT",
