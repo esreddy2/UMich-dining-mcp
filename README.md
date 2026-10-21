@@ -216,14 +216,34 @@ npm start
 The test suite never touches the network: `tests/fixtures/` holds the live HTML of the ten
 halls and of the regular hours page, captured on 2026-10-20.
 
+The tests are written to catch bugs, not to describe the code. They come in four layers:
+
+| Layer | What it checks | Against what |
+| --- | --- | --- |
+| `tests/expected-data.test.ts` | every meal, station, dish, trait, allergen, tier and nutrition value | the expected data of `tests/fixtures/expected/` |
+| `tests/source-truth.test.ts` | the same facts, re-read | the raw markup of the fixtures, with regular expressions only |
+| `tests/*-detail.test.ts` | nutrition, hours, service and MCP contract | the markup, the site's data and the protocol |
+| `tests/oracle/build_expected.py` | writes the expected data | the fixtures, with its own HTML reader |
+
+The expected data is written by a second implementation of the site reader that shares no
+code with `src/`: it has its own tolerant HTML parser, and it was checked against the live
+rendered pages of all ten halls as well. A test that compares the parser with the expected
+data therefore compares it with the markup of the site, not with itself. The oracle is
+written in Python and is not part of the test run:
+
+```bash
+npm run test:oracle          # fail when the expected data is out of date
+python3 tests/oracle/build_expected.py   # rewrite it after a new capture
+```
+
 ```bash
 npm run capture              # re-capture the fixtures for today
 npm run capture -- 2026-10-20
 npm run test:live            # the network-gated tests
 ```
 
-After the site changes its HTML, re-capture the fixtures, update the counts in
-`tests/snapshots/item-names.json` and this table, and the parsers will tell you what moved.
+After the site changes its HTML, re-capture the fixtures, rebuild the expected data with the
+oracle, update this table, and the parsers will tell you what moved.
 
 ## Contact
 
