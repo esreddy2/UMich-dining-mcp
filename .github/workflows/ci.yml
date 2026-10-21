@@ -1,7 +1,9 @@
 name: CI
 
 on:
+  # The tags are the business of the publish workflow.
   push:
+    branches: ['**']
   pull_request:
   workflow_dispatch:
 
