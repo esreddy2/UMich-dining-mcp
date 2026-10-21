@@ -41,6 +41,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:live": "LIVE=1 vitest run --config vitest.live.config.ts",
+    "test:oracle": "python3 tests/oracle/build_expected.py --check",
     "start": "node dist/index.js",
     "capture": "tsx scripts/capture-fixtures.ts",
     "capture:date": "tsx scripts/capture-fixtures.ts"

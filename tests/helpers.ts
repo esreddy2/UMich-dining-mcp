@@ -7,6 +7,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 
 export const FIXTURE_DIR = join(HERE, 'fixtures');
 export const SNAPSHOT_DIR = join(HERE, 'snapshots');
+export const EXPECTED_DIR = join(FIXTURE_DIR, 'expected');
 
 /** The date the committed fixtures were captured for. */
 export const FIXTURE_DATE = '2026-10-20';
@@ -43,6 +44,85 @@ export interface ItemNameSnapshot {
 
 export function readItemNameSnapshot(): ItemNameSnapshot {
   return JSON.parse(readFileSync(join(SNAPSHOT_DIR, 'item-names.json'), 'utf-8')) as ItemNameSnapshot;
+}
+
+/**
+ * The expected data of a hall, written by `tests/oracle/build_expected.py`.
+ *
+ * The oracle is a second implementation of the site reader that shares no
+ * code with `src/`, so the expectations describe the markup of the site and
+ * not the behaviour of the parser under test.
+ */
+export interface ExpectedNutrition {
+  servingSize: string | null;
+  calories: number | null;
+  totalFat: string | null;
+  saturatedFat: string | null;
+  transFat: string | null;
+  cholesterol: string | null;
+  sodium: string | null;
+  totalCarbohydrate: string | null;
+  dietaryFiber: string | null;
+  sugars: string | null;
+  protein: string | null;
+  micronutrients: Record<string, string>;
+}
+
+export interface ExpectedPanel {
+  /** The values read out of the rows of the nutrition table. */
+  values: ExpectedNutrition;
+}
+
+export interface ExpectedItem {
+  name: string;
+  /** The `trait-*` classes of the item element. */
+  traitClasses: string[];
+  /** The `allergen-*` classes of the item element. */
+  allergenClasses: string[];
+  /** The trait list the site publishes with the item. */
+  publishedTraits: { slug: string; label: string }[];
+  /** The nutrition panel that follows the item, or null when there is none. */
+  panel: ExpectedPanel | null;
+}
+
+export interface ExpectedStation {
+  name: string;
+  items: ExpectedItem[];
+}
+
+export interface ExpectedMeal {
+  /** The label the site uses for the meal. */
+  label: string;
+  stations: ExpectedStation[];
+}
+
+export interface ExpectedHall {
+  hall: string;
+  meals: ExpectedMeal[];
+  todayHours: { label: string; times: string }[];
+  location: { address: string | null; phone: string | null; email: string | null; mapUrl: string | null };
+  counts: { meals: number; stations: number; items: number; panels: number };
+  source: { itemNameSpans: number; nutritionDivs: number; nutritionTables: number };
+}
+
+export interface ExpectedRegularHours {
+  name: string;
+  url: string | null;
+  weekly: {
+    dayLabel: string;
+    days: string[];
+    periods: { label: string; times: string; raw: string }[];
+  }[];
+}
+
+export function readExpected(hall: string): ExpectedHall {
+  return JSON.parse(readFileSync(join(EXPECTED_DIR, `${hall}.json`), 'utf-8')) as ExpectedHall;
+}
+
+export function readExpectedRegularHours(): Record<string, ExpectedRegularHours> {
+  return JSON.parse(
+    readFileSync(join(EXPECTED_DIR, 'regular-hours.json'), 'utf-8'),
+  ) as Record<string, ExpectedRegularHours>;
 }
 
 /**

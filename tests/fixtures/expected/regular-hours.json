@@ -1,0 +1,703 @@
+{
+ "bursley": {
+  "name": "Bursley",
+  "url": "https://dining.umich.edu/menus-locations/dining-halls/bursley/",
+  "weekly": [
+   {
+    "dayLabel": "Sunday",
+    "days": [
+     "Sunday"
+    ],
+    "periods": [
+     {
+      "label": "Breakfast",
+      "times": "9:00 am - 10:30 am",
+      "raw": "Breakfast: 9:00 am - 10:30 am"
+     },
+     {
+      "label": "Brunch",
+      "times": "10:30 am - 2:00 pm",
+      "raw": "Brunch: 10:30 am - 2:00 pm"
+     },
+     {
+      "label": "Dinner",
+      "times": "4:30 pm - 9:00 pm",
+      "raw": "Dinner: 4:30 pm - 9:00 pm"
+     }
+    ]
+   },
+   {
+    "dayLabel": "Monday - Thursday",
+    "days": [
+     "Monday",
+     "Tuesday",
+     "Wednesday",
+     "Thursday"
+    ],
+    "periods": [
+     {
+      "label": "Breakfast",
+      "times": "7:00 am - 10:30 am",
+      "raw": "Breakfast: 7:00 am - 10:30 am"
+     },
+     {
+      "label": "Lunch",
+      "times": "10:30 am - 4:30 pm",
+      "raw": "Lunch: 10:30 am - 4:30 pm"
+     },
+     {
+      "label": "Dinner",
+      "times": "4:30 pm - 9:00 pm",
+      "raw": "Dinner: 4:30 pm - 9:00 pm"
+     }
+    ]
+   },
+   {
+    "dayLabel": "Friday",
+    "days": [
+     "Friday"
+    ],
+    "periods": [
+     {
+      "label": "Breakfast",
+      "times": "7:00 am - 10:30 am",
+      "raw": "Breakfast: 7:00 am - 10:30 am"
+     },
+     {
+      "label": "Lunch",
+      "times": "10:30 am - 4:30 pm",
+      "raw": "Lunch: 10:30 am - 4:30 pm"
+     },
+     {
+      "label": "Dinner",
+      "times": "4:30 pm - 8:00 pm",
+      "raw": "Dinner: 4:30 pm - 8:00 pm"
+     }
+    ]
+   },
+   {
+    "dayLabel": "Saturday",
+    "days": [
+     "Saturday"
+    ],
+    "periods": [
+     {
+      "label": "Breakfast",
+      "times": "9:00 am - 10:30 am",
+      "raw": "Breakfast: 9:00 am - 10:30 am"
+     },
+     {
+      "label": "Brunch",
+      "times": "10:30 am - 2:00 pm",
+      "raw": "Brunch: 10:30 am - 2:00 pm"
+     },
+     {
+      "label": "Dinner",
+      "times": "4:30 pm - 8:00 pm",
+      "raw": "Dinner: 4:30 pm - 8:00 pm"
+     }
+    ]
+   }
+  ]
+ },
+ "east-quad": {
+  "name": "East Quad",
+  "url": "https://dining.umich.edu/menus-locations/dining-halls/east-quad/",
+  "weekly": [
+   {
+    "dayLabel": "Monday - Friday",
+    "days": [
+     "Monday",
+     "Tuesday",
+     "Wednesday",
+     "Thursday",
+     "Friday"
+    ],
+    "periods": [
+     {
+      "label": "Breakfast",
+      "times": "7:00 am - 10:30 am",
+      "raw": "Breakfast: 7:00 am - 10:30 am"
+     },
+     {
+      "label": "Lunch",
+      "times": "10:30 am - 3:00 pm",
+      "raw": "Lunch: 10:30 am - 3:00 pm"
+     },
+     {
+      "label": "Dinner",
+      "times": "4:30 pm - 8:00 pm",
+      "raw": "Dinner: 4:30 pm - 8:00 pm"
+     }
+    ]
+   },
+   {
+    "dayLabel": "Saturday - Sunday",
+    "days": [
+     "Saturday",
+     "Sunday"
+    ],
+    "periods": [
+     {
+      "label": "Breakfast",
+      "times": "9:00 am - 10:30 am",
+      "raw": "Breakfast: 9:00 am - 10:30 am"
+     },
+     {
+      "label": "Brunch",
+      "times": "10:30 am - 2:00 pm",
+      "raw": "Brunch: 10:30 am - 2:00 pm"
+     },
+     {
+      "label": "Dinner",
+      "times": "4:30 pm - 8:00 pm",
+      "raw": "Dinner: 4:30 pm - 8:00 pm"
+     }
+    ]
+   }
+  ]
+ },
+ "markley": {
+  "name": "Markley",
+  "url": "https://dining.umich.edu/menus-locations/dining-halls/markley/",
+  "weekly": [
+   {
+    "dayLabel": "Monday - Friday",
+    "days": [
+     "Monday",
+     "Tuesday",
+     "Wednesday",
+     "Thursday",
+     "Friday"
+    ],
+    "periods": [
+     {
+      "label": "Breakfast",
+      "times": "7:00 am - 10:30 am",
+      "raw": "Breakfast: 7:00 am - 10:30 am"
+     },
+     {
+      "label": "Lunch",
+      "times": "10:30 am - 2:00 pm",
+      "raw": "Lunch: 10:30 am - 2:00 pm"
+     },
+     {
+      "label": "Dinner",
+      "times": "4:30 pm - 8:00 pm",
+      "raw": "Dinner: 4:30 pm - 8:00 pm"
+     }
+    ]
+   },
+   {
+    "dayLabel": "Saturday - Sunday",
+    "days": [
+     "Saturday",
+     "Sunday"
+    ],
+    "periods": [
+     {
+      "label": "Brunch",
+      "times": "10:30 am - 2:00 pm",
+      "raw": "Brunch: 10:30 am - 2:00 pm"
+     }
+    ]
+   }
+  ]
+ },
+ "mosher-jordan": {
+  "name": "Mosher-Jordan",
+  "url": "https://dining.umich.edu/menus-locations/dining-halls/mosher-jordan/",
+  "weekly": [
+   {
+    "dayLabel": "Sunday",
+    "days": [
+     "Sunday"
+    ],
+    "periods": [
+     {
+      "label": "Breakfast",
+      "times": "9:00 am - 10:30 am",
+      "raw": "Breakfast: 9:00 am - 10:30 am"
+     },
+     {
+      "label": "Brunch",
+      "times": "10:30 am - 2:00 pm",
+      "raw": "Brunch: 10:30 am - 2:00 pm"
+     },
+     {
+      "label": "Dinner",
+      "times": "4:30 pm - 9:00 pm",
+      "raw": "Dinner: 4:30 pm - 9:00 pm"
+     }
+    ]
+   },
+   {
+    "dayLabel": "Monday - Thursday",
+    "days": [
+     "Monday",
+     "Tuesday",
+     "Wednesday",
+     "Thursday"
+    ],
+    "periods": [
+     {
+      "label": "Breakfast",
+      "times": "7:00 am - 10:30 am",
+      "raw": "Breakfast: 7:00 am - 10:30 am"
+     },
+     {
+      "label": "Lunch",
+      "times": "10:30 am - 4:30 pm",
+      "raw": "Lunch: 10:30 am - 4:30 pm"
+     },
+     {
+      "label": "Dinner",
+      "times": "4:30 pm - 9:00 pm",
+      "raw": "Dinner: 4:30 pm - 9:00 pm"
+     }
+    ]
+   },
+   {
+    "dayLabel": "Friday",
+    "days": [
+     "Friday"
+    ],
+    "periods": [
+     {
+      "label": "Breakfast",
+      "times": "7:00 am - 10:30 am",
+      "raw": "Breakfast: 7:00 am - 10:30 am"
+     },
+     {
+      "label": "Lunch",
+      "times": "10:30 am - 4:30 pm",
+      "raw": "Lunch: 10:30 am - 4:30 pm"
+     },
+     {
+      "label": "Dinner",
+      "times": "4:30 pm - 8:00 pm",
+      "raw": "Dinner: 4:30 pm - 8:00 pm"
+     }
+    ]
+   },
+   {
+    "dayLabel": "Saturday",
+    "days": [
+     "Saturday"
+    ],
+    "periods": [
+     {
+      "label": "Breakfast",
+      "times": "9:00 am - 10:30 am",
+      "raw": "Breakfast: 9:00 am - 10:30 am"
+     },
+     {
+      "label": "Brunch",
+      "times": "10:30 am - 2:00 pm",
+      "raw": "Brunch: 10:30 am - 2:00 pm"
+     },
+     {
+      "label": "Dinner",
+      "times": "4:30 pm - 8:00 pm",
+      "raw": "Dinner: 4:30 pm - 8:00 pm"
+     }
+    ]
+   }
+  ]
+ },
+ "north-quad": {
+  "name": "North Quad",
+  "url": "https://dining.umich.edu/menus-locations/dining-halls/north-quad/",
+  "weekly": [
+   {
+    "dayLabel": "Monday - Friday",
+    "days": [
+     "Monday",
+     "Tuesday",
+     "Wednesday",
+     "Thursday",
+     "Friday"
+    ],
+    "periods": [
+     {
+      "label": "Breakfast",
+      "times": "7:00 am - 10:30 am",
+      "raw": "Breakfast: 7:00 am - 10:30 am"
+     },
+     {
+      "label": "Lunch",
+      "times": "10:30 am - 2:00 pm",
+      "raw": "Lunch: 10:30 am - 2:00 pm"
+     },
+     {
+      "label": "Dinner",
+      "times": "4:30 pm - 8:00 pm",
+      "raw": "Dinner: 4:30 pm - 8:00 pm"
+     }
+    ]
+   },
+   {
+    "dayLabel": "Saturday - Sunday",
+    "days": [
+     "Saturday",
+     "Sunday"
+    ],
+    "periods": [
+     {
+      "label": "Brunch",
+      "times": "10:30 am - 2:00 pm",
+      "raw": "Brunch: 10:30 am - 2:00 pm"
+     }
+    ]
+   }
+  ]
+ },
+ "south-quad": {
+  "name": "South Quad",
+  "url": "https://dining.umich.edu/menus-locations/dining-halls/south-quad/",
+  "weekly": [
+   {
+    "dayLabel": "Sunday",
+    "days": [
+     "Sunday"
+    ],
+    "periods": [
+     {
+      "label": "Breakfast",
+      "times": "9:00 am - 10:30 am",
+      "raw": "Breakfast: 9:00 am - 10:30 am"
+     },
+     {
+      "label": "Brunch",
+      "times": "10:30 am - 2:00 pm",
+      "raw": "Brunch: 10:30 am - 2:00 pm"
+     },
+     {
+      "label": "Dinner",
+      "times": "4:30 pm - 9:00 pm",
+      "raw": "Dinner: 4:30 pm - 9:00 pm"
+     }
+    ]
+   },
+   {
+    "dayLabel": "Monday - Thursday",
+    "days": [
+     "Monday",
+     "Tuesday",
+     "Wednesday",
+     "Thursday"
+    ],
+    "periods": [
+     {
+      "label": "Breakfast",
+      "times": "7:00 am - 10:30 am",
+      "raw": "Breakfast: 7:00 am - 10:30 am"
+     },
+     {
+      "label": "Lunch",
+      "times": "10:30 am - 4:30 pm",
+      "raw": "Lunch: 10:30 am - 4:30 pm"
+     },
+     {
+      "label": "Dinner",
+      "times": "4:30 pm - 9:00 pm",
+      "raw": "Dinner: 4:30 pm - 9:00 pm"
+     }
+    ]
+   },
+   {
+    "dayLabel": "Friday",
+    "days": [
+     "Friday"
+    ],
+    "periods": [
+     {
+      "label": "Breakfast",
+      "times": "7:00 am - 10:30 am",
+      "raw": "Breakfast: 7:00 am - 10:30 am"
+     },
+     {
+      "label": "Lunch",
+      "times": "10:30 am - 4:30 pm",
+      "raw": "Lunch: 10:30 am - 4:30 pm"
+     },
+     {
+      "label": "Dinner",
+      "times": "4:30 pm - 8:00 pm",
+      "raw": "Dinner: 4:30 pm - 8:00 pm"
+     }
+    ]
+   },
+   {
+    "dayLabel": "Saturday",
+    "days": [
+     "Saturday"
+    ],
+    "periods": [
+     {
+      "label": "Breakfast",
+      "times": "9:00 am - 10:30 am",
+      "raw": "Breakfast: 9:00 am - 10:30 am"
+     },
+     {
+      "label": "Brunch",
+      "times": "10:30 am - 2:00 pm",
+      "raw": "Brunch: 10:30 am - 2:00 pm"
+     },
+     {
+      "label": "Dinner",
+      "times": "4:30 pm - 8:00 pm",
+      "raw": "Dinner: 4:30 pm - 8:00 pm"
+     }
+    ]
+   }
+  ]
+ },
+ "twigs-at-oxford": {
+  "name": "Twigs at Oxford",
+  "url": "https://dining.umich.edu/menus-locations/dining-halls/twigs-at-oxford/",
+  "weekly": [
+   {
+    "dayLabel": "Monday - Friday",
+    "days": [
+     "Monday",
+     "Tuesday",
+     "Wednesday",
+     "Thursday",
+     "Friday"
+    ],
+    "periods": [
+     {
+      "label": "Breakfast",
+      "times": "7:00 am - 10:30 am",
+      "raw": "Breakfast: 7:00 am - 10:30 am"
+     },
+     {
+      "label": "Lunch",
+      "times": "10:30 am - 2:00 pm",
+      "raw": "Lunch: 10:30 am - 2:00 pm"
+     },
+     {
+      "label": "Dinner",
+      "times": "4:30 pm - 8:00 pm",
+      "raw": "Dinner: 4:30 pm - 8:00 pm"
+     }
+    ]
+   },
+   {
+    "dayLabel": "Saturday - Sunday",
+    "days": [
+     "Saturday",
+     "Sunday"
+    ],
+    "periods": [
+     {
+      "label": "Brunch",
+      "times": "10:30 am - 2:00 pm",
+      "raw": "Brunch: 10:30 am - 2:00 pm"
+     },
+     {
+      "label": "Dinner",
+      "times": "4:30 pm - 8:00 pm",
+      "raw": "Dinner: 4:30 pm - 8:00 pm"
+     }
+    ]
+   }
+  ]
+ },
+ "wolverine-village": {
+  "name": "Wolverine VIllage",
+  "url": "https://dining.umich.edu/menus-locations/dining-halls/wolverine-village-dining-hall/",
+  "weekly": [
+   {
+    "dayLabel": "Sunday",
+    "days": [
+     "Sunday"
+    ],
+    "periods": [
+     {
+      "label": "Breakfast",
+      "times": "9:00 am - 10:30 am",
+      "raw": "Breakfast: 9:00 am - 10:30 am"
+     },
+     {
+      "label": "Brunch",
+      "times": "10:30 am - 2:00 pm",
+      "raw": "Brunch: 10:30 am - 2:00 pm"
+     },
+     {
+      "label": "Dinner",
+      "times": "4:30 pm - 9:00 pm",
+      "raw": "Dinner: 4:30 pm - 9:00 pm"
+     }
+    ]
+   },
+   {
+    "dayLabel": "Monday - Thursday",
+    "days": [
+     "Monday",
+     "Tuesday",
+     "Wednesday",
+     "Thursday"
+    ],
+    "periods": [
+     {
+      "label": "Breakfast",
+      "times": "7:00 am - 10:30 am",
+      "raw": "Breakfast: 7:00 am - 10:30 am"
+     },
+     {
+      "label": "Lunch",
+      "times": "10:30 am - 4:30 pm",
+      "raw": "Lunch: 10:30 am - 4:30 pm"
+     },
+     {
+      "label": "Dinner",
+      "times": "4:30 pm - 9:00 pm",
+      "raw": "Dinner: 4:30 pm - 9:00 pm"
+     }
+    ]
+   },
+   {
+    "dayLabel": "Friday",
+    "days": [
+     "Friday"
+    ],
+    "periods": [
+     {
+      "label": "Breakfast",
+      "times": "7:00 am - 10:30 am",
+      "raw": "Breakfast: 7:00 am - 10:30 am"
+     },
+     {
+      "label": "Lunch",
+      "times": "10:30 am - 4:30 pm",
+      "raw": "Lunch: 10:30 am - 4:30 pm"
+     },
+     {
+      "label": "Dinner",
+      "times": "4:30 pm - 8:00 pm",
+      "raw": "Dinner: 4:30 pm - 8:00 pm"
+     }
+    ]
+   },
+   {
+    "dayLabel": "Saturday",
+    "days": [
+     "Saturday"
+    ],
+    "periods": [
+     {
+      "label": "Breakfast",
+      "times": "9:00 am - 10:30 am",
+      "raw": "Breakfast: 9:00 am - 10:30 am"
+     },
+     {
+      "label": "Brunch",
+      "times": "10:30 am - 2:00 pm",
+      "raw": "Brunch: 10:30 am - 2:00 pm"
+     },
+     {
+      "label": "Dinner",
+      "times": "4:30 pm - 8:00 pm",
+      "raw": "Dinner: 4:30 pm - 8:00 pm"
+     }
+    ]
+   }
+  ]
+ },
+ "martha-cook": {
+  "name": "Martha Cook",
+  "url": "https://dining.umich.edu/menus-locations/dining-halls/select-access/martha-cook/",
+  "weekly": [
+   {
+    "dayLabel": "Monday - Friday",
+    "days": [
+     "Monday",
+     "Tuesday",
+     "Wednesday",
+     "Thursday",
+     "Friday"
+    ],
+    "periods": [
+     {
+      "label": "Breakfast",
+      "times": "7:00 am - 9:15 am",
+      "raw": "Breakfast: 7:00 am - 9:15 am"
+     },
+     {
+      "label": "Lunch",
+      "times": "11:00 am - 4:30 pm",
+      "raw": "Lunch: 11:00 am - 4:30 pm"
+     },
+     {
+      "label": "Dinner",
+      "times": "4:30 pm - 7:30 pm",
+      "raw": "Dinner: 4:30 pm - 7:30 pm"
+     }
+    ]
+   },
+   {
+    "dayLabel": "Sunday - Saturday",
+    "days": [
+     "Sunday",
+     "Monday",
+     "Tuesday",
+     "Wednesday",
+     "Thursday",
+     "Friday",
+     "Saturday"
+    ],
+    "periods": [
+     {
+      "label": "",
+      "times": "Closed",
+      "raw": "Closed"
+     }
+    ]
+   }
+  ]
+ },
+ "lawyers-club": {
+  "name": "Lawyers Club",
+  "url": "https://dining.umich.edu/menus-locations/dining-halls/select-access/lawyers-club/",
+  "weekly": [
+   {
+    "dayLabel": "Sunday - Friday",
+    "days": [
+     "Sunday",
+     "Monday",
+     "Tuesday",
+     "Wednesday",
+     "Thursday",
+     "Friday"
+    ],
+    "periods": [
+     {
+      "label": "Lunch",
+      "times": "11:30 am - 1:00 pm",
+      "raw": "Lunch: 11:30 am - 1:00 pm"
+     },
+     {
+      "label": "Dinner",
+      "times": "5:30 pm - 7:00 pm",
+      "raw": "Dinner: 5:30 pm - 7:00 pm"
+     }
+    ]
+   },
+   {
+    "dayLabel": "Saturday",
+    "days": [
+     "Saturday"
+    ],
+    "periods": [
+     {
+      "label": "",
+      "times": "Closed",
+      "raw": "Closed"
+     }
+    ]
+   }
+  ]
+ }
+}

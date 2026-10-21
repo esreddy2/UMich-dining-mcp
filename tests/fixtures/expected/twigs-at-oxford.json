@@ -1,0 +1,877 @@
+{
+ "hall": "twigs-at-oxford",
+ "meals": [
+  {
+   "label": "Dinner",
+   "stations": [
+    {
+     "name": "Soup",
+     "items": [
+      {
+       "name": "Vegan Tomato Soup",
+       "traitClasses": [
+        "mhealthy1",
+        "vegan",
+        "carbonlow"
+       ],
+       "allergenClasses": [
+        "wheat_barley_rye"
+       ],
+       "publishedTraits": [
+        {
+         "slug": "mhealthy1",
+         "label": "Nutrient Dense Low"
+        },
+        {
+         "slug": "vegan",
+         "label": "Vegan"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "Cups (227g)",
+         "calories": 80,
+         "micronutrients": {
+          "Vitamin A": "%",
+          "Vitamin C": "7%",
+          "Calcium": "2%",
+          "Iron": "3%"
+         },
+         "totalFat": "0g",
+         "saturatedFat": "0g",
+         "transFat": "0g",
+         "cholesterol": "0mg",
+         "sodium": "429mg",
+         "totalCarbohydrate": "18g",
+         "dietaryFiber": "1g",
+         "sugars": "11g",
+         "protein": "2g"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "name": "Signature Maize",
+     "items": [
+      {
+       "name": "Mashed Potatoes",
+       "traitClasses": [
+        "glutenfree",
+        "mhealthy1",
+        "vegetarian",
+        "carbonmedium"
+       ],
+       "allergenClasses": [
+        "milk"
+       ],
+       "publishedTraits": [
+        {
+         "slug": "glutenfree",
+         "label": "Gluten Free"
+        },
+        {
+         "slug": "mhealthy1",
+         "label": "Nutrient Dense Low"
+        },
+        {
+         "slug": "vegetarian",
+         "label": "Vegetarian"
+        },
+        {
+         "slug": "carbonmedium",
+         "label": "Carbon Footprint Medium"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "1/2 Cup (113g)",
+         "calories": 127,
+         "micronutrients": {
+          "Vitamin A": "4%",
+          "Vitamin C": "20%",
+          "Calcium": "3%",
+          "Iron": "0%"
+         },
+         "totalFat": "5g",
+         "saturatedFat": "3g",
+         "transFat": "0g",
+         "cholesterol": "13mg",
+         "sodium": "172mg",
+         "totalCarbohydrate": "18g",
+         "dietaryFiber": "2g",
+         "sugars": "3g",
+         "protein": "3g"
+        }
+       }
+      },
+      {
+       "name": "Roasted Zucchini",
+       "traitClasses": [
+        "glutenfree",
+        "mhealthy3",
+        "vegan",
+        "carbonlow"
+       ],
+       "allergenClasses": [],
+       "publishedTraits": [
+        {
+         "slug": "glutenfree",
+         "label": "Gluten Free"
+        },
+        {
+         "slug": "mhealthy3",
+         "label": "Nutrient Dense Medium"
+        },
+        {
+         "slug": "vegan",
+         "label": "Vegan"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "6 oz Serving (170g)",
+         "calories": 53,
+         "micronutrients": {
+          "Vitamin A": "11%",
+          "Vitamin C": "46%",
+          "Calcium": "2%",
+          "Iron": "3%"
+         },
+         "totalFat": "4g",
+         "saturatedFat": "1g",
+         "transFat": "0g",
+         "cholesterol": "0mg",
+         "sodium": "85mg",
+         "totalCarbohydrate": "5g",
+         "dietaryFiber": "2g",
+         "sugars": "4g",
+         "protein": "2g"
+        }
+       }
+      },
+      {
+       "name": "Grandma Shubert's Meatloaf",
+       "traitClasses": [
+        "halal",
+        "mhealthy2",
+        "carbonhigh"
+       ],
+       "allergenClasses": [
+        "beef",
+        "eggs",
+        "wheat_barley_rye"
+       ],
+       "publishedTraits": [
+        {
+         "slug": "halal",
+         "label": "Halal"
+        },
+        {
+         "slug": "mhealthy2",
+         "label": "Nutrient Dense Low Medium"
+        },
+        {
+         "slug": "carbonhigh",
+         "label": "Carbon Footprint High"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "14 SRV/LOAF (142g)",
+         "calories": 300,
+         "micronutrients": {
+          "Vitamin A": "2%",
+          "Vitamin C": "3%",
+          "Calcium": "3%",
+          "Iron": "12%"
+         },
+         "totalFat": "19g",
+         "saturatedFat": "7g",
+         "transFat": "1g",
+         "cholesterol": "102mg",
+         "sodium": "557mg",
+         "totalCarbohydrate": "14g",
+         "dietaryFiber": "1g",
+         "sugars": "2g",
+         "protein": "18g"
+        }
+       }
+      },
+      {
+       "name": "Roasted Vegetable Strudel",
+       "traitClasses": [
+        "mhealthy5",
+        "vegan",
+        "carbonlow"
+       ],
+       "allergenClasses": [
+        "wheat_barley_rye"
+       ],
+       "publishedTraits": [
+        {
+         "slug": "mhealthy5",
+         "label": "Nutrient Dense High"
+        },
+        {
+         "slug": "vegan",
+         "label": "Vegan"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "Piece (142g)",
+         "calories": 194,
+         "micronutrients": {
+          "Vitamin A": "10%",
+          "Vitamin C": "13%",
+          "Calcium": "2%",
+          "Iron": "2%"
+         },
+         "totalFat": "15g",
+         "saturatedFat": "1g",
+         "transFat": "0g",
+         "cholesterol": "0mg",
+         "sodium": "341mg",
+         "totalCarbohydrate": "16g",
+         "dietaryFiber": "3g",
+         "sugars": "3g",
+         "protein": "3g"
+        }
+       }
+      },
+      {
+       "name": "Mushroom Gravy",
+       "traitClasses": [
+        "mhealthy3",
+        "vegan",
+        "carbonlow"
+       ],
+       "allergenClasses": [
+        "soy",
+        "wheat_barley_rye"
+       ],
+       "publishedTraits": [
+        {
+         "slug": "mhealthy3",
+         "label": "Nutrient Dense Medium"
+        },
+        {
+         "slug": "vegan",
+         "label": "Vegan"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "1/4 Cup (57g)",
+         "calories": 36,
+         "micronutrients": {
+          "Vitamin A": "0%",
+          "Vitamin C": "1%",
+          "Calcium": "0%",
+          "Iron": "1%"
+         },
+         "totalFat": "3g",
+         "saturatedFat": "1g",
+         "transFat": "0g",
+         "cholesterol": "0mg",
+         "sodium": "116mg",
+         "totalCarbohydrate": "3g",
+         "dietaryFiber": "0g",
+         "sugars": "0g",
+         "protein": "1g"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "name": "Halal",
+     "items": [
+      {
+       "name": "Long Grain Rice",
+       "traitClasses": [
+        "glutenfree",
+        "mhealthy3",
+        "vegan",
+        "carbonlow"
+       ],
+       "allergenClasses": [],
+       "publishedTraits": [
+        {
+         "slug": "glutenfree",
+         "label": "Gluten Free"
+        },
+        {
+         "slug": "mhealthy3",
+         "label": "Nutrient Dense Medium"
+        },
+        {
+         "slug": "vegan",
+         "label": "Vegan"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "1/2 Cup (74g)",
+         "calories": 111,
+         "micronutrients": {
+          "Vitamin A": "0%",
+          "Vitamin C": "0%",
+          "Calcium": "0%",
+          "Iron": "5%"
+         },
+         "totalFat": "0g",
+         "saturatedFat": "0g",
+         "transFat": "0g",
+         "cholesterol": "0mg",
+         "sodium": "333mg",
+         "totalCarbohydrate": "24g",
+         "dietaryFiber": "0g",
+         "sugars": "0g",
+         "protein": "3g"
+        }
+       }
+      },
+      {
+       "name": "Carrots",
+       "traitClasses": [
+        "glutenfree",
+        "mhealthy5",
+        "vegan",
+        "carbonlow"
+       ],
+       "allergenClasses": [],
+       "publishedTraits": [
+        {
+         "slug": "glutenfree",
+         "label": "Gluten Free"
+        },
+        {
+         "slug": "mhealthy5",
+         "label": "Nutrient Dense High"
+        },
+        {
+         "slug": "vegan",
+         "label": "Vegan"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "1/2 Cup (113g)",
+         "calories": 40,
+         "micronutrients": {
+          "Vitamin A": "%",
+          "Vitamin C": "%",
+          "Calcium": "0%",
+          "Iron": "0%"
+         },
+         "totalFat": "0g",
+         "saturatedFat": "0g",
+         "transFat": "0g",
+         "cholesterol": "0mg",
+         "sodium": "60mg",
+         "totalCarbohydrate": "9g",
+         "dietaryFiber": "3g",
+         "sugars": "5g",
+         "protein": "0g"
+        }
+       }
+      },
+      {
+       "name": "Brined Chicken",
+       "traitClasses": [
+        "glutenfree",
+        "halal",
+        "mhealthy5",
+        "carbonmedium"
+       ],
+       "allergenClasses": [],
+       "publishedTraits": [
+        {
+         "slug": "glutenfree",
+         "label": "Gluten Free"
+        },
+        {
+         "slug": "halal",
+         "label": "Halal"
+        },
+        {
+         "slug": "mhealthy5",
+         "label": "Nutrient Dense High"
+        },
+        {
+         "slug": "carbonmedium",
+         "label": "Carbon Footprint Medium"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "3 oz Piece (85g)",
+         "calories": 98,
+         "micronutrients": {
+          "Vitamin A": "0%",
+          "Vitamin C": "0%",
+          "Calcium": "0%",
+          "Iron": "5%"
+         },
+         "totalFat": "3g",
+         "saturatedFat": "0g",
+         "transFat": "0g",
+         "cholesterol": "53mg",
+         "sodium": "778mg",
+         "totalCarbohydrate": "0g",
+         "dietaryFiber": "0g",
+         "sugars": "0g",
+         "protein": "18g"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "name": "Wild Fire Maize",
+     "items": [
+      {
+       "name": "French Fries",
+       "traitClasses": [
+        "mhealthy1",
+        "vegan",
+        "carbonlow"
+       ],
+       "allergenClasses": [
+        "item-is-deep-fried"
+       ],
+       "publishedTraits": [
+        {
+         "slug": "mhealthy1",
+         "label": "Nutrient Dense Low"
+        },
+        {
+         "slug": "vegan",
+         "label": "Vegan"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "1/2 Cup (113g)",
+         "calories": 186,
+         "micronutrients": {
+          "Vitamin A": "0%",
+          "Vitamin C": "0%",
+          "Calcium": "1%",
+          "Iron": "2%"
+         },
+         "totalFat": "10g",
+         "saturatedFat": "0g",
+         "transFat": "0g",
+         "cholesterol": "0mg",
+         "sodium": "470mg",
+         "totalCarbohydrate": "25g",
+         "dietaryFiber": "1g",
+         "sugars": "1g",
+         "protein": "1g"
+        }
+       }
+      },
+      {
+       "name": "Black Bean Burger w/ White Bun",
+       "traitClasses": [
+        "mhealthy5",
+        "vegetarian",
+        "carbonlow"
+       ],
+       "allergenClasses": [
+        "eggs",
+        "milk",
+        "sesame-seed",
+        "soy",
+        "wheat_barley_rye"
+       ],
+       "publishedTraits": [
+        {
+         "slug": "mhealthy5",
+         "label": "Nutrient Dense High"
+        },
+        {
+         "slug": "vegetarian",
+         "label": "Vegetarian"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "Sandwich (145g)",
+         "calories": 255,
+         "micronutrients": {
+          "Vitamin A": "0%",
+          "Vitamin C": "0%",
+          "Calcium": "9%",
+          "Iron": "14%"
+         },
+         "totalFat": "7g",
+         "saturatedFat": "2g",
+         "transFat": "0g",
+         "cholesterol": "6mg",
+         "sodium": "540mg",
+         "totalCarbohydrate": "35g",
+         "dietaryFiber": "7g",
+         "sugars": "4g",
+         "protein": "16g"
+        }
+       }
+      },
+      {
+       "name": "Beef and Mushroom Blended Burger",
+       "traitClasses": [
+        "halal",
+        "mhealthy3",
+        "carbonhigh"
+       ],
+       "allergenClasses": [
+        "beef",
+        "sesame-seed",
+        "soy",
+        "wheat_barley_rye"
+       ],
+       "publishedTraits": [
+        {
+         "slug": "halal",
+         "label": "Halal"
+        },
+        {
+         "slug": "mhealthy3",
+         "label": "Nutrient Dense Medium"
+        },
+        {
+         "slug": "carbonhigh",
+         "label": "Carbon Footprint High"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "Hamburger (120g)",
+         "calories": 281,
+         "micronutrients": {
+          "Vitamin A": "0%",
+          "Vitamin C": "0%",
+          "Calcium": "4%",
+          "Iron": "18%"
+         },
+         "totalFat": "14g",
+         "saturatedFat": "5g",
+         "transFat": "1g",
+         "cholesterol": "73mg",
+         "sodium": "242mg",
+         "totalCarbohydrate": "17g",
+         "dietaryFiber": "1g",
+         "sugars": "2g",
+         "protein": "21g"
+        }
+       }
+      },
+      {
+       "name": "Beef & Mushroom Blend Burger w/ Cheddar",
+       "traitClasses": [
+        "halal",
+        "mhealthy3",
+        "carbonhigh"
+       ],
+       "allergenClasses": [
+        "beef",
+        "milk",
+        "sesame-seed",
+        "soy",
+        "wheat_barley_rye"
+       ],
+       "publishedTraits": [
+        {
+         "slug": "halal",
+         "label": "Halal"
+        },
+        {
+         "slug": "mhealthy3",
+         "label": "Nutrient Dense Medium"
+        },
+        {
+         "slug": "carbonhigh",
+         "label": "Carbon Footprint High"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "Burger (154g)",
+         "calories": 367,
+         "micronutrients": {
+          "Vitamin A": "0%",
+          "Vitamin C": "0%",
+          "Calcium": "19%",
+          "Iron": "19%"
+         },
+         "totalFat": "21g",
+         "saturatedFat": "9g",
+         "transFat": "1g",
+         "cholesterol": "96mg",
+         "sodium": "376mg",
+         "totalCarbohydrate": "17g",
+         "dietaryFiber": "1g",
+         "sugars": "2g",
+         "protein": "26g"
+        }
+       }
+      },
+      {
+       "name": "Turkey Burger on White Bun",
+       "traitClasses": [
+        "mhealthy3",
+        "carbonlow"
+       ],
+       "allergenClasses": [
+        "sesame-seed",
+        "soy",
+        "wheat_barley_rye"
+       ],
+       "publishedTraits": [
+        {
+         "slug": "mhealthy3",
+         "label": "Nutrient Dense Medium"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "Burger (165g)",
+         "calories": 264,
+         "micronutrients": {
+          "Vitamin A": "0%",
+          "Vitamin C": "0%",
+          "Calcium": "3%",
+          "Iron": "6%"
+         },
+         "totalFat": "11g",
+         "saturatedFat": "4g",
+         "transFat": "0g",
+         "cholesterol": "100mg",
+         "sodium": "717mg",
+         "totalCarbohydrate": "17g",
+         "dietaryFiber": "1g",
+         "sugars": "2g",
+         "protein": "23g"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "name": "MBakery",
+     "items": [
+      {
+       "name": "Vegan Chocolate Chip Cookie Bar",
+       "traitClasses": [
+        "mhealthy1",
+        "vegan",
+        "carbonlow"
+       ],
+       "allergenClasses": [
+        "alcohol",
+        "soy",
+        "wheat_barley_rye"
+       ],
+       "publishedTraits": [
+        {
+         "slug": "mhealthy1",
+         "label": "Nutrient Dense Low"
+        },
+        {
+         "slug": "vegan",
+         "label": "Vegan"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "Bar (48g)",
+         "calories": 201,
+         "micronutrients": {
+          "Vitamin A": "0%",
+          "Vitamin C": "0%",
+          "Calcium": "1%",
+          "Iron": "10%"
+         },
+         "totalFat": "12g",
+         "saturatedFat": "6g",
+         "transFat": "0g",
+         "cholesterol": "0mg",
+         "sodium": "231mg",
+         "totalCarbohydrate": "24g",
+         "dietaryFiber": "2g",
+         "sugars": "14g",
+         "protein": "2g"
+        }
+       }
+      },
+      {
+       "name": "Brown Sugar Caramel Cake",
+       "traitClasses": [
+        "mhealthy1",
+        "vegetarian",
+        "carbonmedium"
+       ],
+       "allergenClasses": [
+        "eggs",
+        "milk",
+        "wheat_barley_rye"
+       ],
+       "publishedTraits": [
+        {
+         "slug": "mhealthy1",
+         "label": "Nutrient Dense Low"
+        },
+        {
+         "slug": "vegetarian",
+         "label": "Vegetarian"
+        },
+        {
+         "slug": "carbonmedium",
+         "label": "Carbon Footprint Medium"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "Pieces (92g)",
+         "calories": 380,
+         "micronutrients": {
+          "Vitamin A": "6%",
+          "Vitamin C": "0%",
+          "Calcium": "4%",
+          "Iron": "5%"
+         },
+         "totalFat": "22g",
+         "saturatedFat": "7g",
+         "transFat": "0g",
+         "cholesterol": "42mg",
+         "sodium": "280mg",
+         "totalCarbohydrate": "45g",
+         "dietaryFiber": "1g",
+         "sugars": "33g",
+         "protein": "3g"
+        }
+       }
+      },
+      {
+       "name": "Caramel Syrup",
+       "traitClasses": [
+        "glutenfree",
+        "mhealthy1",
+        "vegetarian",
+        "carbonlow"
+       ],
+       "allergenClasses": [
+        "milk"
+       ],
+       "publishedTraits": [
+        {
+         "slug": "glutenfree",
+         "label": "Gluten Free"
+        },
+        {
+         "slug": "mhealthy1",
+         "label": "Nutrient Dense Low"
+        },
+        {
+         "slug": "vegetarian",
+         "label": "Vegetarian"
+        },
+        {
+         "slug": "carbonlow",
+         "label": "Carbon Footprint Low"
+        }
+       ],
+       "panel": {
+        "values": {
+         "servingSize": "Ounce (28g)",
+         "calories": 81,
+         "micronutrients": {
+          "Vitamin A": "0%",
+          "Vitamin C": "0%",
+          "Calcium": "1%",
+          "Iron": "0%"
+         },
+         "totalFat": "0g",
+         "saturatedFat": "0g",
+         "transFat": "0g",
+         "cholesterol": "0mg",
+         "sodium": "41mg",
+         "totalCarbohydrate": "18g",
+         "dietaryFiber": "0g",
+         "sugars": "12g",
+         "protein": "0g"
+        }
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "todayHours": [
+  {
+   "label": "Dinner",
+   "times": "4:30 pm - 8:00 pm"
+  }
+ ],
+ "location": {
+  "address": "619 Oxford Road, Ann Arbor, MI, 48109-2634",
+  "phone": "734-763-7200",
+  "email": "dining-twigsatoxford@umich.edu",
+  "mapUrl": "https://www.google.com/maps/place/619+Oxford+Road%2C+Ann+Arbor%2C+MI%2C+48109-2634"
+ },
+ "counts": {
+  "meals": 1,
+  "stations": 5,
+  "items": 17,
+  "panels": 17
+ },
+ "source": {
+  "itemNameSpans": 17,
+  "nutritionDivs": 17,
+  "nutritionTables": 17
+ }
+}
