@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/esreddy2/UMich-dining-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/esreddy2/UMich-dining-mcp/actions/workflows/ci.yml)
 [![Live site](https://github.com/esreddy2/UMich-dining-mcp/actions/workflows/live.yml/badge.svg)](https://github.com/esreddy2/UMich-dining-mcp/actions/workflows/live.yml)
+[![npm](https://img.shields.io/npm/v/umich-dining-mcp?style=flat&logo=npm&logoColor=cb3837&logoSize=20)](https://www.npmjs.com/package/umich-dining-mcp)
 
 An MCP server that answers questions about the **dining halls** of the University of
 Michigan in Ann Arbor: what is being served, which dishes are vegan or halal, what a dish
