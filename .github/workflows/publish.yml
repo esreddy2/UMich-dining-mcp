@@ -1,8 +1,9 @@
 name: Publish
 
 # The publish happens when a version tag is pushed.  The npm package is
-# published with OIDC: the workflow asks for a short-lived token from npm and
-# gets it, so no token is stored in the repository.
+# published with OIDC: the workflow asks npm for a short-lived token and gets
+# it, so the repository holds no token at all.  The server is published to the
+# MCP registry the same way, with the identity of the workflow.
 on:
   push:
     tags: ['v*']
@@ -13,7 +14,7 @@ permissions:
 
 jobs:
   publish:
-    name: Publish to npm
+    name: Publish to npm and to the MCP registry
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -28,16 +29,42 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm test
-      - name: Publish
+      - name: The version of the tag
+        id: version
         run: |
           version="${GITHUB_REF_NAME#v}"
+          if [ "$(node -p "require('./package.json').version")" != "${version}" ]; then
+            echo "The tag ${GITHUB_REF_NAME} and the version in package.json do not match."
+            exit 1
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+      - name: Publish to npm
+        run: |
+          version="${{ steps.version.outputs.version }}"
           published="$(npm view "umich-dining-mcp@${version}" version 2>/dev/null || true)"
           if [ "${published}" = "${version}" ]; then
             echo "umich-dining-mcp@${version} is on npm already; nothing to publish."
             exit 0
           fi
-          if [ "$(node -p "require('./package.json').version")" != "${version}" ]; then
-            echo "The tag ${GITHUB_REF_NAME} and the version in package.json do not match."
-            exit 1
-          fi
           npm publish --access public
+      - name: Install the publisher of the MCP registry
+        run: |
+          curl -sL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+      - name: Authenticate to the MCP registry
+        run: ./mcp-publisher login github-oidc
+      - name: Publish to the MCP registry
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          jq --arg v "${version}" '.version = $v | .packages[0].version = $v' server.json > server.json.new
+          mv server.json.new server.json
+          # The registry looks the package up on npm, and npm needs a moment
+          # to show a version that was just published.
+          for attempt in 1 2 3 4 5 6; do
+            if ./mcp-publisher publish; then
+              exit 0
+            fi
+            echo "The publish failed; trying again in 30 seconds."
+            sleep 30
+          done
+          echo "The server could not be published to the MCP registry."
+          exit 1
