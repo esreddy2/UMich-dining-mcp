@@ -299,7 +299,9 @@ describe('the parser on the pages of the site', () => {
       const html = readFixture(fixture);
       const menu = parseMenuPage(html);
       const stations = Object.values(menu.meals).flat().map((station) => station.name);
-      expect(stations, fixture).not.toContain("Today's Hours");
+      // The heading of the hours block names the day the page shows, so it is
+      // matched by its ending and not by a fixed text.
+      expect(stations.some((name) => name.endsWith('Hours')), fixture).toBe(false);
       expect(stations, fixture).not.toContain('Special Diets');
       expect(stations, fixture).not.toContain('MyNutrition');
 

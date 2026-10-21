@@ -12,7 +12,9 @@ npm start
 ```
 
 The suite never touches the network. `tests/fixtures/` holds the live HTML of the ten halls
-and of the regular hours page, captured on 2026-10-20.
+and of the regular hours page, captured for 2026-10-22. The capture date is written to
+`tests/fixtures/capture-date.txt`, which the oracle and the tests read, so the fixtures and
+the expected data always agree on which day they describe.
 
 It has four layers:
 
@@ -39,48 +41,52 @@ python3 tests/oracle/build_expected.py    # rewrite it after a new capture
 
 ```bash
 npm run capture              # re-capture the fixtures for today
-npm run capture -- 2026-10-20
+npm run capture -- 2026-10-22
 npm run test:live            # the tests that read the real site
 ```
 
 When the site changes its HTML: re-capture the fixtures, rebuild the expected data with the
 oracle, update the table below, and the parsers will show what moved.
 
-## What the site published for 2026-10-20
+## What the site published for 2026-10-22
 
 | id | Hall | Meals | Stations | Dishes |
 |---|---|---|---|---|
-| `bursley` | Bursley | Breakfast, Lunch, Dinner | 22 | 66 |
-| `east-quad` | East Quad | Dinner | 9 | 40 |
-| `markley` | Markley | Dinner | 6 | 14 |
-| `mosher-jordan` | Mosher-Jordan | Breakfast, Lunch, Dinner | 21 | 65 |
-| `north-quad` | North Quad | Dinner | 7 | 20 |
-| `south-quad` | South Quad | Breakfast, Lunch, Dinner | 28 | 94 |
-| `twigs-at-oxford` | Twigs at Oxford | Dinner | 5 | 17 |
-| `wolverine-village` | Wolverine Village | Breakfast, Lunch, Dinner | 31 | 97 |
-| `lawyers-club` | Lawyers Club | Lunch, Dinner | 12 | 23 |
-| `martha-cook` | Martha Cook | Dinner | 8 | 12 |
+| `bursley` | Bursley | Breakfast, Lunch, Dinner | 22 | 69 |
+| `east-quad` | East Quad | Breakfast, Lunch, Dinner | 17 | 72 |
+| `markley` | Markley | Breakfast, Lunch, Dinner | 14 | 36 |
+| `mosher-jordan` | Mosher-Jordan | Breakfast, Lunch, Dinner | 20 | 57 |
+| `north-quad` | North Quad | Breakfast, Lunch, Dinner | 20 | 58 |
+| `south-quad` | South Quad | Breakfast, Lunch, Dinner | 28 | 97 |
+| `twigs-at-oxford` | Twigs at Oxford | Breakfast, Lunch, Dinner | 12 | 43 |
+| `wolverine-village` | Wolverine Village | Breakfast, Lunch, Dinner | 29 | 83 |
+| `lawyers-club` | Lawyers Club | Lunch, Dinner | 13 | 27 |
+| `martha-cook` | Martha Cook | Breakfast, Lunch, Dinner | 14 | 20 |
 
-448 dishes in total. The counts are a regression lock: `tests/menu.test.ts` fails when the
+562 dishes in total. The counts are a regression lock: `tests/menu.test.ts` fails when the
 site changes shape.
 
-**The Meals column is about that one capture, not about the halls.** All ten halls serve
-breakfast, lunch and dinner. The capture was taken for the current day, and for the current
-day the site publishes only the meals that have not passed yet, so a capture made later in
-the day shows dinner alone. The same halls publish all three meals on other days:
+**The Meals column is about the capture date, and the capture is a full view of the day.**
+Nine of the ten halls publish all three meals; Lawyers Club publishes lunch and dinner only,
+which is what the site says about that hall on every day of the week.
+
+The capture used to be made for the current day, and for the current day the site publishes
+only the meals that have not passed yet, so a capture taken later in the day showed dinner
+alone for the halls that had already served breakfast and lunch. A capture for a date in the
+future is a full view of all three meals, which is why the fixtures are taken for tomorrow
+rather than for the current day. The page then also names the hours block after that day
+("Thursday's Hours" for a Thursday) instead of "Today's Hours".
 
 | Date | Bursley | East Quad | Markley | North Quad | Martha Cook | Lawyers Club |
 |---|---|---|---|---|---|---|
 | Mon 2026-10-19 (past) | B, L, D | – | – | – | – | L, D |
-| Tue 2026-10-20 (the capture) | B, L, D | D | D | D | D | L, D |
+| Tue 2026-10-20 | B, L, D | D | D | D | D | L, D |
 | Wed 2026-10-21 | B, L, D | B, L, D | B, L, D | B, L, D | B, L, D | L, D |
-| Thu 2026-10-22 | B, L, D | B, L, D | B, L, D | B, L, D | B, L, D | L, D |
+| Thu 2026-10-22 (the capture) | B, L, D | B, L, D | B, L, D | B, L, D | B, L, D | L, D |
+| Fri 2026-10-23 | B, L, D | B, L, D | B, L, D | B, L, D | B, L, D | L, D |
 | Sat 2026-10-24 | B, D | B, D | – | – | – | – |
 
-A dash means the site published no menu for that hall on that day. Two consequences for the
-fixtures: the capture is a partial view of the day, so a future markup change in a meal
-section is only covered for the halls that published it, and a capture for a date in the
-future is a full view of all three meals.
+A dash means the site published no menu for that hall on that day.
 
 ## The checks on GitHub
 

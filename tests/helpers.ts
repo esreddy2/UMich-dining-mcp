@@ -10,7 +10,7 @@ export const SNAPSHOT_DIR = join(HERE, 'snapshots');
 export const EXPECTED_DIR = join(FIXTURE_DIR, 'expected');
 
 /** The date the committed fixtures were captured for. */
-export const FIXTURE_DATE = '2026-10-20';
+export const FIXTURE_DATE = readFileSync(join(FIXTURE_DIR, 'capture-date.txt'), 'utf-8').trim();
 
 /** The fixture file of a hall, named after its path under /menus-locations/. */
 export const HALL_FIXTURES: Record<string, string> = {

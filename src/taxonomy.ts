@@ -1,5 +1,5 @@
 /**
- * Allergen and trait vocabularies, live-verified on 2026-10-20 against all ten
+ * Allergen and trait vocabularies, live-verified on 2026-10-22 against all ten
  * dining hall pages.
  *
  * The labels are the site's own: the allergen labels come from the menu page's

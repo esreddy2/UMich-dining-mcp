@@ -92,7 +92,7 @@ describe('date handling', () => {
 
     const page = await getMenu('bursley', today);
     expect(page.menu.renderedDate).toBe(today);
-    expect(countItems(page.menu.meals)).toBe(66);
+    expect(countItems(page.menu.meals)).toBe(69);
   });
 
   it('fails when no menu is published for the day', async () => {

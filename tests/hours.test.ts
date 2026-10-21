@@ -59,15 +59,20 @@ describe('hours of a hall page', () => {
   it('reads the service periods of the day', () => {
     const periods = parseTodaysHours(load(readFixture('bursley.html')));
     expect(periods).toEqual([
-      { label: 'Breakfast', times: '9:00 am - 10:30 am', closed: false },
-      { label: 'Lunch', times: '10:30 am - 2:00 pm', closed: false },
-      { label: 'Dinner', times: '4:30 pm - 8:00 pm', closed: false },
+      { label: 'Breakfast', times: '7:00 am - 10:30 am', closed: false },
+      { label: 'Lunch', times: '10:30 am - 4:30 pm', closed: false },
+      { label: 'Dinner', times: '4:30 pm - 9:00 pm', closed: false },
     ]);
   });
 
-  it('reads the periods of a hall that serves dinner only', () => {
-    const periods = parseTodaysHours(load(readFixture('east-quad.html')));
-    expect(periods).toEqual([{ label: 'Dinner', times: '4:30 pm - 8:00 pm', closed: false }]);
+  it('reads the periods of a hall that does not serve breakfast', () => {
+    // Lawyers Club serves lunch and dinner; the site publishes no breakfast
+    // for it, and the page has no breakfast block at all.
+    const periods = parseTodaysHours(load(readFixture('lawyers-club.html')));
+    expect(periods).toEqual([
+      { label: 'Lunch', times: '11:30 am - 1:00 pm', closed: false },
+      { label: 'Dinner', times: '5:30 pm - 7:00 pm', closed: false },
+    ]);
   });
 
   it('normalises the non-breaking hyphen of the site', () => {

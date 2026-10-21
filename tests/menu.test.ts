@@ -1,23 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { parseMenuPage } from '../src/parser/menu.js';
 import { HALL_IDS, type MealName } from '../src/types.js';
-import { HALL_FIXTURES, readFixture, readItemNameSnapshot } from './helpers.js';
+import { FIXTURE_DATE, HALL_FIXTURES, readFixture, readItemNameSnapshot } from './helpers.js';
 
 /**
- * The verified ground truth of 2026-10-20: meals, stations and items per
- * hall. These numbers are the regression lock on the site's structure.
+ * The verified ground truth of the capture date: meals, stations and items
+ * per hall. These numbers are the regression lock on the site's structure.
  */
 const GROUND_TRUTH: Record<string, { meals: number; stations: number; items: number }> = {
-  bursley: { meals: 3, stations: 22, items: 66 },
-  'east-quad': { meals: 1, stations: 9, items: 40 },
-  markley: { meals: 1, stations: 6, items: 14 },
-  'mosher-jordan': { meals: 3, stations: 21, items: 65 },
-  'north-quad': { meals: 1, stations: 7, items: 20 },
-  'south-quad': { meals: 3, stations: 28, items: 94 },
-  'twigs-at-oxford': { meals: 1, stations: 5, items: 17 },
-  'wolverine-village': { meals: 3, stations: 31, items: 97 },
-  'lawyers-club': { meals: 2, stations: 12, items: 23 },
-  'martha-cook': { meals: 1, stations: 8, items: 12 },
+  bursley: { meals: 3, stations: 22, items: 69 },
+  'east-quad': { meals: 3, stations: 17, items: 72 },
+  markley: { meals: 3, stations: 14, items: 36 },
+  'mosher-jordan': { meals: 3, stations: 20, items: 57 },
+  'north-quad': { meals: 3, stations: 20, items: 58 },
+  'south-quad': { meals: 3, stations: 28, items: 97 },
+  'twigs-at-oxford': { meals: 3, stations: 12, items: 43 },
+  'wolverine-village': { meals: 3, stations: 29, items: 83 },
+  'lawyers-club': { meals: 2, stations: 13, items: 27 },
+  'martha-cook': { meals: 3, stations: 14, items: 20 },
 };
 
 function dishLines(html: string): string[] {
@@ -52,7 +52,7 @@ describe('menu parser', () => {
 
       it('matches the committed item-name snapshot', () => {
         const snapshot = readItemNameSnapshot();
-        expect(snapshot.capturedFor).toBe('2026-10-20');
+        expect(snapshot.capturedFor).toBe(FIXTURE_DATE);
         const expected = snapshot.halls[hall];
         expect(expected).toBeDefined();
         expect(dishLines(html)).toEqual(expected?.dishLines);
@@ -71,8 +71,8 @@ describe('menu parser', () => {
         expect(item.name.length).toBeGreaterThan(0);
       }
     }
-    // 87 would be the count if the station <li> were read as an item.
-    expect(menu.itemCount).toBe(66);
+    // 91 would be the count if the station <li> were read as an item.
+    expect(menu.itemCount).toBe(69);
   });
 
   it('keeps the site own meal labels', () => {
@@ -86,7 +86,7 @@ describe('menu parser', () => {
     const names = Object.values(menu.meals)
       .flat()
       .flatMap((station) => station.items.map((item) => item.name));
-    expect(names).toHaveLength(66);
+    expect(names).toHaveLength(69);
     expect(new Set(names).size).toBeLessThanOrEqual(names.length);
     // "Oatmeal" is served once at Bursley.
     expect(names.filter((name) => name === 'Oatmeal')).toHaveLength(1);
