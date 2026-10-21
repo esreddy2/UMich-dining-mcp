@@ -1,0 +1,36 @@
+name: Live site
+
+# The live tests read the real site, so they run when the branch that is
+# published changes, once a day, and on demand.  They are a workflow of their
+# own: the site may be down or slow, and that must not fail the checks of the
+# code itself.
+on:
+  push:
+    branches: [feat/rebuild]
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: live-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  live:
+    name: Live tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:live
+        env:
+          # The site turns away the User-Agent of a browser.
+          UMICH_DINING_USER_AGENT: python-requests/2.32.3
