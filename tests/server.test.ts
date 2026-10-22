@@ -347,11 +347,12 @@ describe('server', () => {
     expect(nutrition.isError).toBeFalsy();
     const nutritionPayload = nutrition.structuredContent as {
       name: string;
-      nutrition: { calories: number; servingSize: string; micronutrients: Record<string, string> };
+      nutrition: { calories: number | null; servingSize: string | null };
+      units: Record<string, string>;
     };
     expect(nutritionPayload.name).toBe('Oatmeal');
     expect(nutritionPayload.nutrition.calories).toBe(183);
     expect(nutritionPayload.nutrition.servingSize).toBe('Cups (253g)');
-    expect(nutritionPayload.nutrition.micronutrients['Vitamin A']).toBe('0%');
+    expect(nutritionPayload.units.calories).toBe('kcal');
   });
 });

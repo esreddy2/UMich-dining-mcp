@@ -209,6 +209,7 @@ const getMenuOutput = z.object({
   totalItems: z.number(),
   stale: z.boolean(),
   asOf: z.string().optional(),
+  nutrients: z.array(z.string()).optional(),
 });
 
 
@@ -267,23 +268,18 @@ const findOpenNowOutput = z.object({
 });
 
 const itemNutritionOutput = z.object({
-  hall: hallIdSchema,
-  hallName: z.string(),
+  key: keySchema,
+  units: z.record(z.string(), z.string()),
+  hall: z.number(),
   date: z.string(),
-  /** The meal, as the site labels it. */
-  meal: z.string(),
-  station: z.string(),
+  meal: z.number(),
+  station: z.number(),
   name: z.string(),
-  traits: z.array(z.string()),
-  traitLabels: z.record(z.string(), z.string()),
-  allergens: z.array(z.string()),
+  traits: z.array(z.number()),
+  allergens: z.array(z.number()),
   mhealthyTier: z.number().nullable(),
   carbonFootprint: carbonSchema.nullable(),
-  nutrition: nutritionSchema,
-  /** The weight of a serving, derived from the published serving size. */
-  servingSizeGrams: z.number().nullable(),
-  /** The micronutrients: the amount they stand for (mg, or mcg RAE for the vitamin A). */
-  micronutrients: z.record(z.string(), z.number().nullable()),
+  nutrition: z.record(z.string(), z.unknown()),
   warning: z.string(),
   asOf: z.string().optional(),
 });

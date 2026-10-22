@@ -314,19 +314,16 @@ describe('the contract of the server', () => {
       arguments: { hall: 'bursley', item: 'Oatmeal' },
     })) as ToolResult;
     const payload = result.structuredContent as {
-      hall: string;
-      meal: string;
-      station: string;
       name: string;
-      nutrition: { calories: number; servingSize: string; micronutrients: Record<string, string> };
+      nutrition: { calories: number | null; servingSize: string | null };
       warning: string;
+      key: { meals: Record<string, string>; stations: Record<string, string> };
     };
-    expect(payload.hall).toBe('bursley');
-    expect(payload.meal).toBe('Breakfast');
-    expect(payload.station).toBe('Hot Cereal');
     expect(payload.name).toBe('Oatmeal');
     expect(payload.nutrition.calories).toBe(183);
     expect(payload.nutrition.servingSize).toBe('Cups (253g)');
+    expect(payload.key.meals[String(payload.meal)]).toBe('Breakfast');
+    expect(payload.key.stations[String(payload.station)]).toBe('Hot Cereal');
     expect(payload.warning).toMatch(/allergen/i);
   });
 

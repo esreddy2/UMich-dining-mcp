@@ -8,9 +8,11 @@ import { parseMenuPage, ParseError, type ParsedMenu, MEAL_BY_LABEL } from './par
 import { parseRegularHours, parseTimeRange, parseTodaysHours } from './parser/hours.js';
 import { load } from 'cheerio';
 import { MEAL_NAMES, type DiningHall, type HallId, type HallHours, type LocationSummary, type MealName, type Menu, type RegularHours, type ServicePeriod, type Station, type Nutrition, type CarbonLevel } from './types.js';
+import { HALL_CODES, TRAIT_CODES, ALLERGEN_CODES, createKeyBuilder, buildKey, mealCode, stationCode } from './codes.js';
 import { ALLERGEN_REMINDER } from './taxonomy.js';
 import {
   MICRONUTRIENT_SPECS,
+  NUTRIENT_SPECS,
   deriveMicronutrient,
   findMicronutrientValue,
   micronutrientAmount,
@@ -1314,31 +1316,22 @@ export async function filterDishes(options: FilterOptions = {}): Promise<DishFil
 }
 
 export interface ItemNutritionResult {
-  hall: HallId;
-  hallName: string;
+  key: Record<string, Record<string, string>>;
+  units: Record<string, string>;
+  hall: number;
   date: string;
-  /** The meal, as the site labels it. */
-  meal: string;
-  station: string;
+  meal: number;
+  station: number;
   name: string;
-  traits: string[];
-  traitLabels: Record<string, string>;
-  allergens: string[];
+  traits: number[];
+  allergens: number[];
   mhealthyTier: number | null;
-  carbonFootprint: CarbonLevel | null;
-  nutrition: Nutrition | null;
-  /** The weight of a serving, derived from the published serving size. */
-  servingSizeGrams: number | null;
-  /**
-   * The micronutrients: the percent the site publishes and the amount it
-   * stands for.
-   */
-  micronutrients: Record<string, number | null>;
+  carbonFootprint: number | null;
+  nutrition: Record<string, unknown>;
   warning: string;
   asOf?: string;
 }
 
-/** A dish of a menu page, with the meal and the station it was served at. */
 interface MenuCandidate {
   /** The meal, as the site labels it. */
   meal: string;
@@ -1351,6 +1344,7 @@ interface MenuCandidate {
   carbonFootprint: CarbonLevel | null;
   nutrition: Nutrition | null;
 }
+
 
 function candidatesOf(page: HallPage, meal?: string, station?: string): MenuCandidate[] {
   const candidates: MenuCandidate[] = [];
@@ -1426,6 +1420,7 @@ function micronutrientAmounts(
  * being guessed. The meal and the station narrow the candidates when the same
  * name is served more than once.
  */
+
 export async function getItemNutrition(
   hallId: HallId,
   itemName: string,
@@ -1472,21 +1467,59 @@ export async function getItemNutrition(
     );
   }
 
+  const builder = createKeyBuilder();
+  const hallCode = HALL_CODES[page.hall.id] ?? 0;
+  const mealCodeValue = mealCode(builder, chosen.meal);
+  const stationCodeValue = stationCode(chosen.station);
+  builder.halls.add(hallCode);
+  builder.stations.set(stationCodeValue, chosen.station);
+
+  const traits: number[] = [];
+  for (const slug of chosen.traits) {
+    const code = TRAIT_CODES[slug];
+    if (code === undefined) continue;
+    traits.push(code);
+    builder.traits.add(code);
+  }
+  const allergens: number[] = [];
+  for (const slug of chosen.allergens) {
+    const code = ALLERGEN_CODES[slug];
+    if (code === undefined) continue;
+    allergens.push(code);
+    builder.allergens.add(code);
+  }
+
+  const units: Record<string, string> = { calories: 'kcal' };
+  for (const spec of NUTRIENT_SPECS) units[spec.key] = spec.unit;
+  for (const spec of MICRONUTRIENT_SPECS) units[spec.field] = spec.derivedUnit;
+
+  const nutritionPanel: Record<string, unknown> = {
+    servingSize: chosen.nutrition?.servingSize ?? null,
+    servingSizeGrams: parseServingSizeGrams(chosen.nutrition?.servingSize ?? null),
+    calories: chosen.nutrition?.calories ?? null,
+  };
+  for (const spec of NUTRIENT_SPECS) {
+    if (spec.key === 'calories') continue;
+    const raw = (chosen.nutrition as unknown as Record<string, unknown>)[spec.key];
+    nutritionPanel[spec.key] = parseNutritionNumber(typeof raw === 'string' ? raw : null, spec.key);
+  }
+  for (const spec of MICRONUTRIENT_SPECS) {
+    nutritionPanel[spec.field] = micronutrientAmount(chosen.nutrition, spec);
+  }
+
   return {
-    hall: page.hall.id,
-    hallName: page.hall.name,
+    key: buildKey(builder),
+    units,
+    hall: hallCode,
     date: requested,
-    meal: chosen.meal,
-    station: chosen.station,
+    meal: mealCodeValue,
+    station: stationCodeValue,
     name: chosen.name,
-    traits: chosen.traits,
-    traitLabels: chosen.traitLabels,
-    allergens: chosen.allergens,
+    traits,
+    allergens,
     mhealthyTier: chosen.mhealthyTier,
     carbonFootprint: chosen.carbonFootprint,
-    nutrition: chosen.nutrition,
-    servingSizeGrams: parseServingSizeGrams(chosen.nutrition?.servingSize ?? null),
-    micronutrients: micronutrientAmounts(chosen.nutrition),
+    nutrition: nutritionPanel,
     warning: ALLERGEN_REMINDER,
     asOf: `${Math.max(0, Math.round((Date.now() - page.storedAt) / 60000))} minutes ago`,
   };
