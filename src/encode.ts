@@ -18,6 +18,8 @@ import {
   parseServingSizeGrams,
   resolveNutrientName,
   resolveSortField,
+  roundToErrorThreshold,
+  sortValue,
   type MicronutrientSpec,
 } from './nutrition.js';
 import type { CarbonLevel, HallId, Nutrition } from './types.js';
@@ -191,12 +193,15 @@ function canonicalSortField(sortBy: string): string {
 
 function sortFieldAlreadyInRow(canonical: string, selection: NutrientSelection): boolean {
   if (canonical === 'calories') return true;
+  if (canonical === 'servingSize' || canonical === 'servingSizeGrams') return true;
+  if (canonical === 'mhealthyTier') return true;
+  if (canonical.includes(':')) return false;
   if (canonical === 'carbonFootprint') return selection.includeCarbon;
   if (canonical === 'proteinToCalorie' || canonical === 'protein_to_calorie') return false;
   if (canonical === 'fiberToCalorie' || canonical === 'fiber_to_calorie') return false;
   if (NUTRIENT_KEYS.includes(canonical)) return selection.keys.includes(canonical);
-  // micronutrient: canonical is its published name (e.g. "Iron")
-  if (selection.micronutrients.some((spec) => spec.name === canonical)) return true;
+  // micronutrient: canonical is its field name (e.g. "vitaminA")
+  if (selection.micronutrients.some((spec) => spec.field === canonical)) return true;
   return false;
 }
 
@@ -222,24 +227,18 @@ export function rowFields(selection: NutrientSelection, withDates = false, hoist
 
 function sortFieldValue(dish: DomainDish, sortBy: string): number | null {
   const canonical = sortBy;
-  if (canonical === 'calories') return dish.calories;
-  if (canonical === 'carbonFootprint') return dish.carbonFootprint;
-  if (canonical === 'sodium') return dish.sodiumMg;
-  if (canonical === 'proteinToCalorie' || canonical === 'protein_to_calorie') {
-    const p = parseNutritionNumber(dish.nutrition?.protein ?? null, 'protein');
-    if (p === null || !dish.calories) return null;
-    return p / dish.calories;
+  const data = {
+    calories: dish.calories,
+    sodiumMg: dish.sodiumMg,
+    mhealthyTier: dish.mhealthyTier,
+    carbonFootprint: dish.carbonFootprint,
+    nutrition: dish.nutrition,
+  };
+  const value = sortValue(data, canonical);
+  if (canonical.includes(':')) {
+    return value === null ? null : roundToErrorThreshold(value);
   }
-  if (canonical === 'fiberToCalorie' || canonical === 'fiber_to_calorie') {
-    const f = parseNutritionNumber(dish.nutrition?.dietaryFiber ?? null, 'dietaryFiber');
-    if (f === null || !dish.calories) return null;
-    return f / dish.calories;
-  }
-  const micro = micronutrientSpec(canonical);
-  if (micro) return micronutrientAmount(dish.nutrition, micro);
-  const raw = dish.nutrition ? (dish.nutrition as unknown as Record<string, unknown>)[canonical] : null;
-  const rawStr = typeof raw === 'string' ? raw : (raw == null ? null : (typeof raw === 'number' ? String(raw) : null));
-  return parseNutritionNumber(rawStr, canonical);
+  return value;
 }
 
 export function encodeDish(

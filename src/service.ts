@@ -14,12 +14,12 @@ import {
   MICRONUTRIENT_SPECS,
   NUTRIENT_SPECS,
   micronutrientAmount,
-  micronutrientSpec,
   nutrientValueInUnit,
   parseNutritionNumber,
   parseServingSizeGrams,
   resolveNutrientRange,
   resolveSortField,
+  sortValue,
   type ResolvedNutrientRange,
 } from './nutrition.js';
 
@@ -1148,27 +1148,16 @@ function sortMatches(
   if (!sortField) return;
 
   const order = sortOrder === 'asc' ? 1 : -1;
-  const getValue = (m: DishMatch): number | null => {
-    if (sortField === 'calories') return m.calories;
-    if (sortField === 'carbonFootprint') return m.carbonFootprint;
-    if (sortField === 'sodium') return m.sodiumMg;
-    if (sortField === 'proteinToCalorie' || sortField === 'protein_to_calorie') {
-      const p = parseNutritionNumber(m.nutrition?.protein ?? null, 'protein');
-      if (p === null || !m.calories) return null;
-      return p / m.calories;
-    }
-    if (sortField === 'fiberToCalorie' || sortField === 'fiber_to_calorie') {
-      const f = parseNutritionNumber(m.nutrition?.dietaryFiber ?? null, 'dietaryFiber');
-      if (f === null || !m.calories) return null;
-      return f / m.calories;
-    }
-    // A micronutrient sorts by its amount, the number the row carries.
-    const micro = micronutrientSpec(sortField);
-    if (micro) return micronutrientAmount(m.nutrition, micro);
-    const raw = (m.nutrition as Record<string, unknown> | null)?.[sortField];
-    const rawStr = typeof raw === 'string' ? raw : (raw == null ? null : (typeof raw === 'number' ? String(raw) : null));
-    return parseNutritionNumber(rawStr, sortField);
-  };
+  const getValue = (m: DishMatch): number | null => sortValue(
+    {
+      calories: m.calories,
+      sodiumMg: m.sodiumMg,
+      mhealthyTier: m.mhealthyTier,
+      carbonFootprint: m.carbonFootprint,
+      nutrition: m.nutrition,
+    },
+    sortField,
+  );
 
   matches.sort((a, b) => {
     const va = getValue(a);

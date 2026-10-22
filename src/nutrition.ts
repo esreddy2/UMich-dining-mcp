@@ -1,4 +1,4 @@
-import type { Nutrition } from './types.js';
+import type { CarbonLevel, Nutrition } from './types.js';
 
 export type NutrientUnit = 'kcal' | 'g' | 'mg' | '%DV' | 'serving';
 
@@ -48,6 +48,14 @@ export const NUTRIENT_SPECS: NutrientSpec[] = [
 
 export const NUTRIENT_KEYS = NUTRIENT_SPECS.map((s) => s.key);
 
+export const MACRO_DAILY_VALUES: Record<string, number> = {
+  totalFat: 78,
+  saturatedFat: 20,
+  sodium: 2300,
+  dietaryFiber: 28,
+  totalCarbohydrate: 275,
+};
+
 /**
  * The four micronutrients the site publishes, with the FDA Daily Value their
  * percentage refers to. The site prints only the percentage; the physical
@@ -74,6 +82,8 @@ export const MICRONUTRIENT_SPECS: MicronutrientSpec[] = [
   { name: 'Calcium', field: 'calcium', publishedUnit: '%DV', dailyValue: 1300, dailyValueUnit: 'mg', derivedUnit: 'mg' },
   { name: 'Iron', field: 'iron', publishedUnit: '%DV', dailyValue: 18, dailyValueUnit: 'mg', derivedUnit: 'mg' },
 ];
+
+export const MICRONUTRIENT_FIELDS = MICRONUTRIENT_SPECS.map((spec) => spec.field);
 
 const normalizeNutrientName = (name: string): string => name.trim().toLowerCase().replace(/[\s\-_]/g, '');
 
@@ -136,7 +146,11 @@ const MICRONUTRIENT_UNITS: Record<string, string[]> = {
 
 export function acceptedUnits(key: string): string[] {
   const units = ACCEPTED_UNITS[key];
-  if (units) return Object.keys(units);
+  if (units) {
+    const keys = Object.keys(units);
+    if (key in MACRO_DAILY_VALUES) keys.push('%DV');
+    return keys;
+  }
   const micro = micronutrientSpec(key);
   if (micro) return MICRONUTRIENT_UNITS[micro.field] ?? [micro.derivedUnit, micro.publishedUnit];
   return [];
@@ -283,9 +297,30 @@ export function resolveNutrientName(name: string): { key: string; micronutrient:
 export const SORT_FIELDS: readonly string[] = [
   ...NUTRIENT_KEYS,
   'carbonFootprint',
+  'servingSize',
+  'servingSizeGrams',
+  'mhealthyTier',
   'proteinToCalorie',
   'fiberToCalorie',
-  ...MICRONUTRIENT_SPECS.map((spec) => spec.name),
+  ...MICRONUTRIENT_FIELDS,
+];
+
+export const STANDALONE_SORT_FIELDS: readonly string[] = [
+  ...NUTRIENT_KEYS,
+  'carbonFootprint',
+  'servingSize',
+  'servingSizeGrams',
+  'mhealthyTier',
+  'proteinToCalorie',
+  'fiberToCalorie',
+  ...MICRONUTRIENT_FIELDS,
+];
+
+export const RATIO_COMPONENT_FIELDS: readonly string[] = [
+  ...NUTRIENT_KEYS,
+  'servingSize',
+  'servingSizeGrams',
+  ...MICRONUTRIENT_FIELDS,
 ];
 
 /** The default direction of a sort. */
@@ -297,15 +332,76 @@ export const DEFAULT_SORT_ORDER = 'desc';
  * An unknown field is refused: a typo would otherwise return a list that
  * looks sorted and is not.
  */
-export function resolveSortField(name: string): string {
-  const wanted = normalizeNutrientName(name);
-  const found = SORT_FIELDS.find((field) => normalizeNutrientName(field) === wanted);
-  if (!found) {
-    throw new NutrientError(
-      `Unknown sort field "${name}". Use one of: ${SORT_FIELDS.join(', ')}.`,
-    );
+const SORT_ALIASES: Record<string, string> = {
+  fiber: 'dietaryFiber',
+  carbs: 'totalCarbohydrate',
+  carbohydrate: 'totalCarbohydrate',
+  carbohydrates: 'totalCarbohydrate',
+  proteintocalorie: 'protein:calories',
+  fibertocalorie: 'dietaryFiber:calories',
+};
+
+const NORMALIZED_STANDALONE = new Map(
+  STANDALONE_SORT_FIELDS.map((field) => [normalizeNutrientName(field), field]),
+);
+
+export function isValidSortField(name: string): boolean {
+  const trimmed = name.trim();
+  if (!trimmed || trimmed.includes(':')) return false;
+  const wanted = normalizeNutrientName(trimmed);
+  if (Object.prototype.hasOwnProperty.call(SORT_ALIASES, wanted)) return true;
+  return NORMALIZED_STANDALONE.has(wanted);
+}
+
+export function resolveSimpleSortField(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    throw new NutrientError(`Unknown sort field "${name}". Use one of: ${STANDALONE_SORT_FIELDS.join(', ')}.`);
   }
-  return found;
+  const wanted = normalizeNutrientName(trimmed);
+  const alias = SORT_ALIASES[wanted];
+  if (alias) return alias;
+  const found = NORMALIZED_STANDALONE.get(wanted);
+  if (found) return found;
+  throw new NutrientError(`Unknown sort field "${name}". Use one of: ${STANDALONE_SORT_FIELDS.join(', ')}.`);
+}
+
+export function resolveSortField(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    throw new NutrientError(`Unknown sort field "${name}". Use one of: ${STANDALONE_SORT_FIELDS.join(', ')}.`);
+  }
+  if (trimmed.includes(':')) {
+    const parts = trimmed.split(':');
+    if (parts.length !== 2) {
+      throw new NutrientError(`"${trimmed}" is not a valid sort field. Use "numerator:denominator", e.g. "protein:calories".`);
+    }
+    const rawNum = parts[0]!;
+    const rawDen = parts[1]!;
+    if (!rawNum.trim() || !rawDen.trim()) {
+      throw new NutrientError(`"${trimmed}" is not a valid sort field. Use "numerator:denominator", e.g. "protein:calories".`);
+    }
+    let numResolved: string;
+    let denResolved: string;
+    try {
+      numResolved = resolveSimpleSortField(rawNum);
+    } catch {
+      throw new NutrientError(`Unknown sort field "${rawNum.trim()}" in ratio. Use one of: ${STANDALONE_SORT_FIELDS.join(', ')}.`);
+    }
+    try {
+      denResolved = resolveSimpleSortField(rawDen);
+    } catch {
+      throw new NutrientError(`Unknown sort field "${rawDen.trim()}" in ratio. Use one of: ${STANDALONE_SORT_FIELDS.join(', ')}.`);
+    }
+    const disallowed: string[] = [];
+    if (!(RATIO_COMPONENT_FIELDS).includes(numResolved)) disallowed.push(numResolved);
+    if (!(RATIO_COMPONENT_FIELDS).includes(denResolved)) disallowed.push(denResolved);
+    if (disallowed.length > 0) {
+      throw new NutrientError(`Unknown or disallowed ratio field: ${disallowed.join(' / ')}.`);
+    }
+    return `${numResolved}:${denResolved}`;
+  }
+  return resolveSimpleSortField(trimmed);
 }
 
 /**
@@ -391,7 +487,12 @@ export function nutrientValueInUnit(
 
   const factors = ACCEPTED_UNITS[key];
   const factor = factors?.[unit];
-  if (factor === undefined) return null;
+  if (factor === undefined) {
+    if (unit === '%DV' && key in MACRO_DAILY_VALUES) {
+      return Math.round((value / MACRO_DAILY_VALUES[key]!) * 100 * 1000) / 1000;
+    }
+    return null;
+  }
   return Math.round((value / factor) * 1000) / 1000;
 }
 
@@ -413,3 +514,62 @@ export function findMicronutrientValue(
   return null;
 }
 
+
+export interface SortableDish {
+  calories: number | null;
+  sodiumMg: number | null;
+  mhealthyTier: number | null;
+  carbonFootprint: CarbonLevel | null;
+  nutrition: Nutrition | null;
+}
+
+export function sortValue(data: SortableDish, sortField: string): number | null {
+  const canonical = sortField;
+  if (canonical === 'calories') return data.calories;
+  if (canonical === 'carbonFootprint') return data.carbonFootprint;
+  if (canonical === 'sodium') return data.sodiumMg;
+  if (canonical === 'servingSize' || canonical === 'servingSizeGrams') {
+    return parseServingSizeGrams(data.nutrition?.servingSize ?? null);
+  }
+  if (canonical === 'mhealthyTier') return data.mhealthyTier;
+
+  if (canonical === 'proteinToCalorie' || canonical === 'protein_to_calorie') {
+    const p = parseNutritionNumber(data.nutrition?.protein ?? null, 'protein');
+    if (p === null || !data.calories) return null;
+    return p / data.calories;
+  }
+  if (canonical === 'fiberToCalorie' || canonical === 'fiber_to_calorie') {
+    const f = parseNutritionNumber(data.nutrition?.dietaryFiber ?? null, 'dietaryFiber');
+    if (f === null || !data.calories) return null;
+    return f / data.calories;
+  }
+
+  if (canonical.includes(':')) {
+    const parts = canonical.split(':');
+    if (parts.length !== 2) return null;
+    const va = sortValue(data, parts[0]!);
+    const vb = sortValue(data, parts[1]!);
+    if (va === null || vb === null) return null;
+    if (vb === 0) return null;
+    const result = va / vb;
+    if (!Number.isFinite(result)) return null;
+    return result;
+  }
+
+  const micro = micronutrientSpec(canonical);
+  if (micro) return micronutrientAmount(data.nutrition, micro);
+
+  const raw = data.nutrition ? (data.nutrition as unknown as Record<string, unknown>)[canonical] : null;
+  const rawStr = typeof raw === 'string' ? raw : (raw == null ? null : (typeof raw === 'number' ? String(raw) : null));
+  return parseNutritionNumber(rawStr, canonical);
+}
+
+export function roundToErrorThreshold(value: number, threshold = 0.10, maxDp = 6): number {
+  if (value === 0) return 0;
+  for (let dp = 0; dp <= maxDp; dp++) {
+    const rounded = Number(value.toFixed(dp));
+    const error = Math.abs(rounded - value) / Math.abs(value);
+    if (error < threshold) return rounded;
+  }
+  return Number(value.toFixed(maxDp));
+}
