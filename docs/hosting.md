@@ -18,6 +18,10 @@ Do not bypass HTTP 403 / Cloudflare challenges or increase upstream concurrency.
 - The HTTP process runs as `umichmcp`, with no shell login, writable
   system paths, or administrator privileges. Systemd limits it to 384 MiB
   and one CPU core. One process means one cache and upstream limiter.
+- The host's time zone does not change any answer: every published day and
+  every mealtime is read in the campus zone, `America/Detroit` (EST/EDT), so a
+  host in Chicago and a host in UTC behave identically. See the README
+  section on time.
 - Public usage is anonymous by default (all tools are read-only) with IP
   and global admission control; optional hashed bearer token config exists.
 
@@ -182,7 +186,7 @@ that does not match them does not have these controls, whatever this page says.
 | `Origin` allowlist | The server | A missing `Origin` passes: only a browser sends one. |
 | Per-IP admission control | The server | Needs `X-Real-IP` to be overwritten by the proxy, so `UMICH_MCP_TRUST_PROXY=1` is only safe behind a proxy that rewrites it. |
 | A bearer token | The server | Off unless `UMICH_MCP_BEARER_TOKEN_SHA256` is set. **Off means the endpoint is anonymous.** |
-| `/healthz` | The server | Public, and it does not fetch the dining site. It reveals the uptime and the cache size and nothing else. |
+| `/healthz` | The server | Public, and it does not fetch the dining site. Without a bearer token it reveals the uptime and nothing else; with one it also reports the cache size and the last upstream failure. |
 
 The development endpoint at `/dev/mcp` is a separate deployment from the one this
 repository configures. `deploy/oracle/dev-deploy.sh` probes it after every deployment and
@@ -229,7 +233,9 @@ To change rates, modify only `/etc/umich-dining-mcp/server.env` and restart
 `umich-dining-mcp.service`, not FRP. Avoid logging request bodies,
 Authorization headers or upstream HTML. Use a monitoring service that
 periodically hits `/healthz` and tests live tools at very low frequency.
-For alerts, inspect `lastUpstreamError` in `/healthz` and logs.
+For alerts, inspect `lastUpstreamError` in `/healthz` and logs. That field is
+only in the payload when a bearer token is configured; without one the
+endpoint is anonymous and says only that the server is up.
 
 Existing root cron already runs Certbot renew every 12 hours, and the
 new certificate has the webroot renewal configuration. A future renewal

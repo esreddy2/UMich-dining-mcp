@@ -1,5 +1,6 @@
 import { config } from './config.js';
 import { cache } from './cache.js';
+import { dayIn, minutesIn } from './clock.js';
 import { fetchText, HttpError } from './http.js';
 import { HALLS, REGULAR_HOURS_PATH, getHallDefinition } from './halls.js';
 import { parseLocationDetails, type LocationDetails } from './parser/location.js';
@@ -137,14 +138,8 @@ export function countStations(meals: Record<MealName, Station[]>): number {
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** The current date in the time zone the site publishes "today" in. */
-const dateFmtCache = new Map<string, Intl.DateTimeFormat>();
 export function todayIn(timeZone: string = config.timezone, now: Date = new Date()): string {
-  let fmt = dateFmtCache.get(timeZone);
-  if (!fmt) { fmt = new Intl.DateTimeFormat('en-US', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }); dateFmtCache.set(timeZone, fmt); }
-  const parts = fmt.formatToParts(now);
-  const get = (type: 'year' | 'month' | 'day'): string =>
-    parts.find((part) => part.type === type)?.value ?? '';
-  return `${get('year')}-${get('month')}-${get('day')}`;
+  return dayIn(timeZone, now);
 }
 
 /** Parse a YYYY-MM-DD string into a UTC timestamp, or null when invalid. */
@@ -509,14 +504,8 @@ export async function loadRegularHours(): Promise<Map<HallId, RegularHours>> {
   return new Map(Object.entries(value) as [HallId, RegularHours][]);
 }
 
-const timeFmtCache = new Map<string, Intl.DateTimeFormat>();
 function minutesNow(timeZone: string, now: Date): number {
-  let fmt = timeFmtCache.get(timeZone);
-  if (!fmt) { fmt = new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', minute: 'numeric', hour12: false }); timeFmtCache.set(timeZone, fmt); }
-  const parts = fmt.formatToParts(now);
-  const get = (type: 'hour' | 'minute'): number =>
-    Number.parseInt(parts.find((part) => part.type === type)?.value ?? '0', 10);
-  return get('hour') * 60 + get('minute');
+  return minutesIn(timeZone, now);
 }
 
 /**

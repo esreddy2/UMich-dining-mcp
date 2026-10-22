@@ -6,6 +6,7 @@ import { loadHttpSettings } from '../src/http-settings.js';
 import { Client, InMemoryTransport } from '@modelcontextprotocol/client';
 import { cache } from '../src/cache.js';
 import { createServer } from '../src/server.js';
+import { todayIn } from '../src/service.js';
 import { mockFixtureFetch, readFixture } from './helpers.js';
 
 /**
@@ -155,7 +156,8 @@ describe('the notes of a sweep answer', () => {
 
   it('says that the answer is a range', async () => {
     mockFixtureFetch();
-    const today = new Date().toISOString().slice(0, 10);
+    // The day of the campus, which is the day the service reads too.
+    const today = todayIn();
     const result = (await client.callTool({
       name: 'filter_dishes',
       arguments: { hall: 'bursley', from: today, to: today },

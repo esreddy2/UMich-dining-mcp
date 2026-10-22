@@ -207,6 +207,40 @@ describe('the menus of the halls', () => {
       expect(countItems(page.menu.meals)).toBe(26);
     });
 
+    it('does not depend on the time zone of the host', async () => {
+      // The server may run in Chicago or in UTC. The campus day and the
+      // mealtimes are the campus ones either way.
+      const original = process.env['TZ'];
+      try {
+        for (const zone of ['America/Chicago', 'UTC', 'Pacific/Kiritimati', 'Asia/Tokyo']) {
+          process.env['TZ'] = zone;
+          expect(todayIn('America/Detroit', new Date('2026-10-22T17:00:00Z')), zone).toBe('2026-10-22');
+          expect(todayIn('America/Detroit', new Date('2026-10-22T03:00:00Z')), zone).toBe('2026-10-21');
+          const page = await getMenu('bursley', '2026-10-22', undefined, new Date('2026-10-22T17:00:00Z'));
+          expect(page.selectedMeals, zone).toEqual(['Lunch']);
+        }
+      } finally {
+        if (original === undefined) delete process.env['TZ'];
+        else process.env['TZ'] = original;
+      }
+    });
+
+    it('serves the next meal after midnight in the campus, not in the host', async () => {
+      // 05:00 UTC is 01:00 in Ann Arbor and 00:00 in Chicago: both are after
+      // dinner, so the next meal is Breakfast in either zone.
+      const original = process.env['TZ'];
+      try {
+        for (const zone of ['America/Chicago', 'UTC']) {
+          process.env['TZ'] = zone;
+          const page = await getMenu('bursley', '2026-10-22', undefined, new Date('2026-10-22T05:00:00Z'));
+          expect(page.selectedMeals, zone).toEqual(['Breakfast']);
+        }
+      } finally {
+        if (original === undefined) delete process.env['TZ'];
+        else process.env['TZ'] = original;
+      }
+    });
+
     it('reports nothing when the hall is closed after hours', async () => {
       // 02:00 UTC on 2026-10-23 is 22:00 on the 22nd in Detroit: after dinner.
       const page = await getMenu('bursley', '2026-10-22', undefined, new Date('2026-10-23T02:00:00Z'));
