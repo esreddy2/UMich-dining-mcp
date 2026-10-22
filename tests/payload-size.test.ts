@@ -58,27 +58,26 @@ describe('the size of a sweep answer', () => {
     // 9,000 B.
     const result = (await client.callTool({
       name: 'get_menu',
-      arguments: { hall: 'south-quad' },
+      arguments: { hall: 'south-quad', meal: 'Lunch' },
     })) as { structuredContent?: { totalItems?: number } };
 
     const items = result.structuredContent?.totalItems ?? 0;
-    expect(items).toBeGreaterThan(50);
+    expect(items).toBe(47);
 
     const size = JSON.stringify(result.structuredContent).length;
     expect(size).toBeLessThan(12_000);
     expect(size / items).toBeLessThan(150);
   });
 
-  it('cuts a menu short when it is asked to', async () => {
+  it('cuts nothing: a whole menu comes back without truncation', async () => {
     const result = (await client.callTool({
       name: 'get_menu',
-      arguments: { hall: 'south-quad', limit: 10 },
+      arguments: { hall: 'south-quad', meal: 'Lunch' },
     })) as {
       structuredContent?: {
         totalItems: number;
-        omittedItems: number;
-        note?: string;
         meals: { stations: { items: unknown[] }[] }[];
+        omittedItems?: number;
       };
     };
 
@@ -87,8 +86,9 @@ describe('the size of a sweep answer', () => {
       (sum, meal) => sum + meal.stations.reduce((inner, station) => inner + station.items.length, 0),
       0,
     );
-    expect(shown).toBe(10);
-    expect(payload.omittedItems).toBe(payload.totalItems - 10);
-    expect(payload.note).toMatch(/cut short/);
+    expect(shown).toBe(payload.totalItems);
+    expect(payload.totalItems).toBe(47);
+    // The limit is gone, so nothing is left out and the field is gone too.
+    expect(payload.omittedItems).toBeUndefined();
   });
 });

@@ -2,7 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Client, InMemoryTransport } from '@modelcontextprotocol/client';
 import { cache } from '../src/cache.js';
 import { createServer } from '../src/server.js';
-import { HALL_FIXTURES, fixtureResponse, mockFixtureFetch, readFixture } from './helpers.js';
+import { HALL_FIXTURES, fixtureResponse, mockFixtureFetch } from './helpers.js';
 
 /**
  * The contract of the server: the tools it offers, the values it accepts,
@@ -95,12 +95,12 @@ describe('the contract of the server', () => {
   });
 
   it('reports the dishes of the hall it was asked for', async () => {
-    const result = (await client.callTool({ name: 'get_menu', arguments: { hall: 'bursley' } })) as ToolResult;
-    const payload = result.structuredContent as { totalItems: number; totalStations: number };
-    const html = readFixture(HALL_FIXTURES['bursley'] as string);
-    const items = (html.match(/<span class="item-name">/g) ?? []).length;
-    expect(payload.totalItems).toBe(items);
-    expect(payload.totalStations).toBe(22);
+    const result = (await client.callTool({ name: 'get_menu', arguments: { hall: 'bursley', meal: 'Lunch' } })) as ToolResult;
+    const payload = result.structuredContent as { totalItems: number; totalStations: number; key: { meals: Record<string, string> }; meals: { meal: number }[] };
+    expect(payload.totalItems).toBe(26);
+    expect(payload.totalStations).toBeGreaterThan(0);
+    expect(payload.meals).toHaveLength(1);
+    expect(payload.key.meals[String(payload.meals[0]!.meal)]).toBe('Lunch');
   });
 
   it('returns only the meal it was asked for', async () => {

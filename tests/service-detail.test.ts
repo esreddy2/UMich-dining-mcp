@@ -1,5 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cache } from '../src/cache.js';
+import { MEAL_NAMES } from '../src/types.js';
 import {
   ServiceError,
   countItems,
@@ -13,7 +14,7 @@ import {
   todayIn,
   validateDate,
 } from '../src/service.js';
-import { HALL_FIXTURES, fixtureResponse, readExpected, mockFixtureFetch } from './helpers.js';
+import { HALL_FIXTURES, fixtureResponse, readExpected, mockFixtureFetch, withDeclaredDate } from './helpers.js';
 
 /**
  * The service layer, checked against the data of the site.
@@ -138,22 +139,36 @@ describe('the menus of the halls', () => {
     mockFixtureFetch();
   });
 
-  it('reads the dishes of every hall', async () => {
+  it('reads the dishes of every hall, meal by meal', async () => {
     for (const hall of Object.keys(HALL_FIXTURES)) {
-      const page = await getMenu(hall as never);
       const expected = readExpected(hall);
-      expect(countItems(page.menu.meals), hall).toBe(expected.counts.items);
-      expect(page.date, hall).toBe(todayIn());
+      const perMeal = Object.fromEntries(
+        expected.meals.map((meal) => [meal.label, meal.stations.reduce((sum, station) => sum + station.items.length, 0)]),
+      );
+      for (const meal of MEAL_NAMES) {
+        const page = await getMenu(hall as never, undefined, meal);
+        expect(countItems(page.menu.meals), `${hall} ${meal}`).toBe(perMeal[meal] ?? 0);
+        expect(page.date, `${hall} ${meal}`).toBe(todayIn());
+      }
     }
   });
 
-  it('reads 562 dishes over the ten halls', async () => {
+  it('reads 562 dishes over the ten halls, meal by meal', async () => {
     let total = 0;
     for (const hall of Object.keys(HALL_FIXTURES)) {
-      const page = await getMenu(hall as never);
-      total += countItems(page.menu.meals);
+      const expected = readExpected(hall);
+      total += expected.counts.items;
     }
     expect(total).toBe(562);
+    // Each meal of each hall yields its own slice of the expected total.
+    let served = 0;
+    for (const hall of Object.keys(HALL_FIXTURES)) {
+      for (const meal of MEAL_NAMES) {
+        const page = await getMenu(hall as never, undefined, meal);
+        served += countItems(page.menu.meals);
+      }
+    }
+    expect(served).toBe(562);
   });
 
   it('reports the contact details of every hall', async () => {
@@ -176,6 +191,92 @@ describe('the menus of the halls', () => {
       const published = expected.meals.filter((meal) => meal.stations.length > 0).map((meal) => meal.label);
       expect(location.meals, location.id).toEqual(published);
     }
+  });
+
+  describe('getMenu meal selection', () => {
+    beforeEach(() => {
+      cache.clear();
+      vi.unstubAllGlobals();
+      mockFixtureFetch();
+    });
+
+    it('selects the meal being served right now', async () => {
+      // 17:00 UTC on 2026-10-22 is 13:00 in the hall's time zone: Lunch.
+      const page = await getMenu('bursley', '2026-10-22', undefined, new Date('2026-10-22T17:00:00Z'));
+      expect(page.selectedMeals).toEqual(['Lunch']);
+      expect(countItems(page.menu.meals)).toBe(26);
+    });
+
+    it('reports nothing when the hall is closed after hours', async () => {
+      // 02:00 UTC on 2026-10-23 is 22:00 on the 22nd in Detroit: after dinner.
+      const page = await getMenu('bursley', '2026-10-22', undefined, new Date('2026-10-23T02:00:00Z'));
+      expect(page.selectedMeals).toEqual([]);
+      expect(page.mealNote).toMatch(/not serving|closed/i);
+      expect(countItems(page.menu.meals)).toBe(0);
+    });
+
+    it('picks the next meal after hours', async () => {
+      // 07:00 UTC on 2026-10-22 is 02:00 in Detroit: the next meal is Breakfast.
+      const page = await getMenu('bursley', '2026-10-22', undefined, new Date('2026-10-22T07:00:00Z'));
+      expect(page.selectedMeals).toEqual(['Breakfast']);
+      expect(countItems(page.menu.meals)).toBe(13);
+    });
+
+    it('skips a meal label it does not know', async () => {
+      const html = `<html><body><div id="mdining-items">
+        <h2 class="menuTitle"><span class="date">Thursday, October 23, 2026</span></h2>
+        <h3>Supper</h3>
+        <div class="courses"><ul class="courses_wrapper"><li><h4>Station</h4><ul class="items"><li><span class="item-name">Supper Dish</span></li></ul></li></ul></div>
+      </div></body></html>`;
+      vi.stubGlobal('fetch', async (): Promise<Response> => new Response(html, { status: 200 }));
+      // Supper is not in the known meal vocabulary, so the hall has no known
+      // meal and the call reports nothing published rather than serving it.
+      await expect(getMenu('bursley', '2026-10-23', undefined, new Date('2026-10-23T12:00:00Z'))).rejects.toThrow(
+        /No menu is published/,
+      );
+    });
+
+    it('returns an empty meal with a note instead of an error', async () => {
+      const html = `<div id="mdining-items">
+        <h3>Breakfast</h3>
+        <div class="courses"><ul class="courses_wrapper"><li><h4>Station</h4><ul class="items"><li><span class="item-name">Oatmeal</span></li></ul></li></ul></div>
+        <h3>Lunch</h3>
+        <div class="courses"><ul class="courses_wrapper"><li><h4>Empty Station</h4><ul class="items"></ul></li></ul></div>
+      </div>`;
+      vi.stubGlobal('fetch', async (): Promise<Response> => new Response(withDeclaredDate(html, '2026-10-24'), { status: 200 }));
+      const page = await getMenu('bursley', '2026-10-24', 'Lunch', new Date('2026-10-24T12:00:00Z'));
+      expect(page.selectedMeals).toEqual(['Lunch']);
+      expect(countItems(page.menu.meals)).toBe(0);
+      expect(page.mealNote).toMatch(/Nothing is published for Lunch/i);
+    });
+
+    it('serves several meals at once', async () => {
+      const page = await getMenu('bursley', '2026-10-22', ['Breakfast', 'Dinner'], new Date('2026-10-22T17:00:00Z'));
+      expect(page.selectedMeals).toEqual(['Breakfast', 'Dinner']);
+      expect(countItems(page.menu.meals)).toBe(13 + 30);
+      expect(page.menu.meals.Brunch).toEqual([]);
+      expect(page.menu.meals.Lunch).toEqual([]);
+    });
+
+    it('serves the meals in the order of the day, whatever the order of the request', async () => {
+      const page = await getMenu('bursley', '2026-10-22', ['Dinner', 'Breakfast'], new Date('2026-10-22T17:00:00Z'));
+      expect(page.selectedMeals).toEqual(['Breakfast', 'Dinner']);
+    });
+
+    it('serves a meal that is asked for twice only once', async () => {
+      const page = await getMenu('bursley', '2026-10-22', ['Lunch', 'Lunch'], new Date('2026-10-22T17:00:00Z'));
+      expect(page.selectedMeals).toEqual(['Lunch']);
+      expect(countItems(page.menu.meals)).toBe(26);
+    });
+
+    it('names the empty meals of a request for several', async () => {
+      // Bursley publishes no Brunch on a weekday, and the request for Brunch
+      // and Lunch still returns Lunch.
+      const page = await getMenu('bursley', '2026-10-22', ['Brunch', 'Lunch'], new Date('2026-10-22T17:00:00Z'));
+      expect(page.selectedMeals).toEqual(['Brunch', 'Lunch']);
+      expect(countItems(page.menu.meals)).toBe(26);
+      expect(page.mealNote).toMatch(/Nothing is published for Brunch/i);
+    });
   });
 
   it('keeps a hall that fails out of the way of the others', async () => {

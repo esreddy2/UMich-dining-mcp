@@ -81,6 +81,13 @@ const hallsSchema = z
   .optional()
   .describe('The halls to search: one hall, or a list of them. Leave it out, or pass an empty list, for every hall.');
 const mealNameSchema = z.enum(MEAL_NAMES);
+/**
+ * The meals to keep: one name, or a list of them.
+ *
+ * The list is empty when the request is refused, so the tool never answers
+ * with a meal that was not asked for.
+ */
+const mealsSchema = z.union([mealNameSchema, z.array(mealNameSchema).min(1)]);
 const allergenSchema = z.enum(ALLERGEN_SLUGS as [string, ...string[]]);
 const traitSchema = z.enum(TRAIT_SLUGS as [string, ...string[]]);
 const carbonSchema = z.number().int().min(1).max(3);
@@ -213,8 +220,6 @@ const getMenuOutput = z.object({
   renderedDate: z.string().nullable(),
   totalStations: z.number(),
   totalItems: z.number(),
-  /** The dishes the response was cut short by. */
-  omittedItems: z.number(),
   /** True when the site published its "no menu" marker for this day. */
   noMenu: z.boolean(),
   stale: z.boolean(),
@@ -462,15 +467,10 @@ export function createServer(): McpServer {
       inputSchema: z.strictObject({
         hall: hallIdSchema.describe('The dining hall to read.'),
         date: dateSchema.optional().describe('The day to read. Defaults to today.'),
-        meal: mealNameSchema.optional().describe('Keeps only that meal.'),
-        station: z.string().optional().describe('Keeps only that station.'),
-        limit: z
-          .number()
-          .int()
-          .min(1)
-          .max(500)
+        meal: mealsSchema
           .optional()
-          .describe('How many dishes to return. The whole menu is returned when it is not given.'),
+          .describe('Keeps only those meals: one name, or a list of them. When it is left out, the meal the hall is serving right now is used.'),
+        station: z.string().optional().describe('Keeps only that station.'),
         include_nutrients: z
           .array(z.string())
           .optional()
@@ -481,13 +481,9 @@ export function createServer(): McpServer {
     },
     async (args) => {
       try {
-        const page = await getMenu(args.hall, args.date);
+        const page = await getMenu(args.hall, args.date, args.meal);
         let groups = menuGroups(page);
 
-        if (args.meal) {
-          const wanted = args.meal.toLowerCase();
-          groups = groups.filter((group) => group.meal.toLowerCase() === wanted);
-        }
         if (args.station) {
           const wanted = args.station.toLowerCase();
           groups = groups.map((group) => ({
@@ -502,35 +498,9 @@ export function createServer(): McpServer {
           0,
         );
 
-        // A limit cuts the tail of the menu, and the response says so.
-        let omittedItems = 0;
-        if (args.limit !== undefined && totalItems > args.limit) {
-          let budget = args.limit;
-          omittedItems = totalItems - args.limit;
-          groups = groups
-            .map((group) => ({
-              meal: group.meal,
-              stations: group.stations.map((station) => {
-                const items = station.items.slice(0, budget);
-                budget -= items.length;
-                return { name: station.name, items };
-              }),
-            }))
-            .map((group) => ({
-              meal: group.meal,
-              stations: group.stations.filter((station) => station.items.length > 0),
-            }))
-            .filter((group) => group.stations.length > 0);
-        }
-
         const selection = selectNutrients(args.include_nutrients);
         const notes: string[] = [];
-        if (omittedItems > 0) {
-          notes.push(
-            `The menu is cut short: ${totalItems} dishes are published and ${omittedItems} of them are ` +
-              'not shown. Raise the limit, or narrow the query.',
-          );
-        }
+        if (page.mealNote) notes.push(page.mealNote);
         if (page.menu.unknownMealLabels.length > 0) {
           notes.push(
             `The site published meal labels this server cannot parse, so those meals are missing: ` +
@@ -547,7 +517,6 @@ export function createServer(): McpServer {
           renderedDate: page.menu.renderedDate,
           totalStations,
           totalItems,
-          omittedItems,
           noMenu: page.menu.noMenu,
           stale: page.stale,
         }, notes));

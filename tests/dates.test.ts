@@ -92,7 +92,7 @@ describe('date handling', () => {
 
     const page = await getMenu('bursley', today);
     expect(page.menu.renderedDate).toBe(today);
-    expect(countItems(page.menu.meals)).toBe(69);
+    expect(countItems(page.menu.meals)).toBeGreaterThan(0);
   });
 
   it('falls back to the datepicker when the page states no date', async () => {

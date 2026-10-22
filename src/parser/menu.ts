@@ -33,7 +33,7 @@ export interface ParsedMenu {
  * The meal labels the site uses. Brunch is the fourth: the site publishes it
  * on the weekend days, where it is often the only meal of the afternoon.
  */
-const MEAL_BY_LABEL: Record<string, MealName> = {
+export const MEAL_BY_LABEL: Record<string, MealName> = {
   breakfast: 'Breakfast',
   brunch: 'Brunch',
   lunch: 'Lunch',

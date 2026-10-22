@@ -92,16 +92,19 @@ service periods of the requested day.
 
 ## get_menu
 
-The whole menu of one hall: the meals, the stations and the dishes, with the same coded row
-the sweep tools return. The panel of a single dish comes from `get_item_nutrition`.
+The menu of one hall for the meal it is serving right now: the stations and the dishes of that
+meal, with the same coded row the sweep tools return. The meal comes from the service periods
+the site published for the day: the period that contains the current time, or, when the hall is
+not serving, the next one. A hall that is serving nothing returns an empty menu with a note.
+Name a meal to get that one instead, whatever the clock says, and name several to get them
+together. The panel of a single dish comes from `get_item_nutrition`.
 
 | Parameter | Type | Meaning |
 |---|---|---|
 | `hall` | hall id | The hall to read. Required. |
 | `date` | `YYYY-MM-DD` | The day to read. Defaults to today. |
-| `meal` | meal name | Keeps only that meal. |
+| `meal` | meal name or list | Keeps only those meals, in the order of the day. When it is left out, the meal the hall is serving right now is used. |
 | `station` | string | Keeps only that station. |
-| `limit` | 1..500 | How many dishes to return. The whole menu is returned when it is not given. |
 | `include_nutrients` | string[] | The nutrients to return, or `["all"]`. |
 
 ## search_dishes
