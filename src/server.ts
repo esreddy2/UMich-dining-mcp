@@ -531,6 +531,7 @@ export function createServer(): McpServer {
           totalItems,
           stale: page.stale,
           asOf: `${Math.max(0, Math.round((Date.now() - page.storedAt) / 60000))} minutes ago`,
+          nutrients: [...selection.keys, ...selection.micronutrients.map((m) => m.field)],
         }, menuNotes));
       } catch (error) {
         return fail(error);
@@ -668,6 +669,7 @@ export function createServer(): McpServer {
           coverage: result.coverage,
           filter: result.filter,
           flags: result.flags,
+          nutrients: [...selection.keys, ...selection.micronutrients.map((m) => m.field)],
         }, extraNotes(result)));
       } catch (error) {
         return fail(error);
