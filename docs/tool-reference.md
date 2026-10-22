@@ -26,9 +26,6 @@ the contract.
            "stations": { "7": "Grill" }, "traits": { "5": "vegan" },
            "allergens": { "7": "milk" } },
   "units": { "calories": "kcal", "protein": "g" },
-  "fields": ["hall", "meal", "station", "name", "traits", "allergens",
-             "mhealthyTier", "calories", "servingSize",
-             "servingSizeGrams", "protein"],
   "note": "Allergen codes: check key.allergens before reporting; site data is advisory.",
   "date": "2026-10-21",
   "totalMatches": 1,
@@ -39,9 +36,10 @@ the contract.
 }
 ```
 
-A row is an **array** and the `fields` list names its positions, once per response. The
-member names of a named row are two and a half times the data of the row, repeated on
-every row: a named row cost 216 bytes, an array row costs 72.
+A row is an **array**; its fixed positions are named in each tool description and the
+variable nutrient tail is carried once per response as `nutrients`. The member names of a
+named row are two and a half times the data of the row, repeated on every row: a named row
+cost 216 bytes, an array row costs 72.
 
 ### The codes
 
@@ -67,11 +65,11 @@ every row: a named row cost 216 bytes, an array row costs 72.
   constrains it with `max_carbon` or sorts by `carbonFootprint`; otherwise it
   is left out to keep the row small.
 - The `units` map gives the unit of every nutrient the response returns.
-- The `fields` list names the positions of a row, in order. A row always carries the
-  hall, the meal, the station, the name, the traits, the allergens, the density tier,
-  the calories, the serving size and the serving size in grams. Every
-  other nutrient, the sodium included, is asked for by name with `include_nutrients`,
-  and a nutrient a filter constrained is always returned.
+- A row carries, in order: hall, meal, station, name, traits, allergens, mhealthyTier,
+  calories, servingSize, servingSizeGrams, then `carbonFootprint` when `max_carbon` or
+  sorting by carbon asks for it, then `dates` in a range, then the `nutrients` tail named
+  by `include_nutrients`. Every other nutrient, sodium included, is asked for by name with
+  `include_nutrients`, and a nutrient a filter constrained is always returned.
 - A dish without a published value is `null`, never `0`.
 - A single-day response carries `date`; a range response carries `dateRange` and each row
   carries the `dates` it appeared on.
@@ -116,8 +114,6 @@ The filters of the menus.
 | `require_traits` | trait slugs | Keeps the dishes that carry every one of them. |
 | `min_mhealthy` | 1..5 | The lowest acceptable nutrient-density tier. |
 | `max_carbon` | 1..3 | The highest acceptable carbon footprint. |
-| `max_calories`, `min_calories` | number | Caps in kcal. |
-| `max_sodium_mg`, `min_sodium_mg` | number | Caps in mg. |
 | `nutrients` | object | A range per nutrient: `{"protein": {"min": 20, "max": 40, "unit": "g"}}`. A micronutrient threshold without a unit is read in the amount the row carries; `"%DV"` asks for the published percent. |
 | `include_nutrients` | string[] | The nutrients to return, or `all`. A nutrient the filter constrained is always returned. |
 | `sort_by` | string | A nutrient key, a micronutrient name, `proteinToCalorie` or `fiberToCalorie`. An unknown field is refused. The whole list is in `list_nutrition_fields`. |
