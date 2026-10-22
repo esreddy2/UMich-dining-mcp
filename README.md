@@ -132,9 +132,6 @@ what that response uses. The codes are frozen for the life of the contract.
            "stations": { "7": "Grill" }, "traits": { "5": "vegan" },
            "allergens": { "7": "milk" } },
   "units": { "calories": "kcal", "protein": "g" },
-  "fields": ["hall", "meal", "station", "name", "traits", "allergens",
-             "mhealthyTier", "calories", "servingSize",
-             "servingSizeGrams", "protein"],
   "note": "Allergen codes: check key.allergens before reporting; site data is advisory.",
   "date": "2026-10-21",
   "matches": [
@@ -143,9 +140,10 @@ what that response uses. The codes are frozen for the life of the contract.
 }
 ```
 
-A row is an **array**, and the `fields` list names its positions, once per response. The
-member names of a named row are two and a half times the data of the row, and the row is
-repeated on every row of the answer: a named row cost 216 bytes, an array row costs 72.
+A row is an **array**; its fixed positions are named in each tool description and the
+variable nutrient tail is carried once per response as `nutrients`. The member names of a
+named row are two and a half times the data of the row, repeated on every row: a named row
+cost 216 bytes, an array row costs 72.
 
 - The halls are 1..10 in the order of the registry below, the meals are 1 (Breakfast),
   2 (Brunch), 3 (Lunch) and 4 (Dinner), the allergens are 1..15 and the six boolean traits
@@ -230,8 +228,6 @@ server at a mirror of the site in another zone.
 | `require_traits` | Keeps only the dishes that carry **every** listed trait. |
 | `min_mhealthy` | Minimum nutrient-density tier, 1..5 (3 = "Nutrient Dense Medium or better"). |
 | `max_carbon` | Maximum carbon footprint: `1` (low), `2` (medium) or `3` (high). |
-| `max_calories`, `min_calories` | Numeric caps in kcal. Dishes without a published value are excluded. |
-| `max_sodium_mg`, `min_sodium_mg` | Numeric caps in mg. Dishes without a published value are excluded. |
 | `nutrients` | A range per nutrient, e.g. `{"protein": {"min": 20, "unit": "g"}}`. The unit defaults to the nutrient's own and is checked. |
 | `include_nutrients` | The nutrients to return, by canonical key or by published name, or `all`. Defaults to the ones the filter used; a constrained nutrient is always returned. |
 | `query` | A case-insensitive substring of the dish name. |
