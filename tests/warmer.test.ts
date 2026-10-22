@@ -112,4 +112,26 @@ describe('the cache behind the memory', () => {
     await memory.flush();
     expect(await memory.isCached('hall:bursley:2026-10-21')).toBe(true);
   });
+
+  it('flushes while a disk write is in flight instead of looping', async () => {
+    const { TtlCache } = await import('../src/cache.js');
+    const memory = new TtlCache(disk);
+    let release: (() => void) | undefined;
+    const held = new Promise<void>((resolve) => { release = resolve; });
+    const realSet = disk.set.bind(disk);
+    vi.spyOn(disk, 'set').mockImplementation(async (key: string, value: unknown, ttlMs: number, storedAt?: number) => {
+      await held;
+      return realSet(key, value, ttlMs, storedAt);
+    });
+
+    const loaded = memory.fetch('hall:bursley:2026-10-21', 60_000, async () => ({ a: 1 }));
+    await loaded; // writeToDisk has been invoked and the write is held in flight
+    const flushing = memory.flush();
+    release!();
+    await flushing;
+
+    const entry = await disk.get('hall:bursley:2026-10-21');
+    expect(entry?.value).toEqual({ a: 1 });
+    vi.restoreAllMocks();
+  });
 });

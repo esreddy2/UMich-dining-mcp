@@ -34,9 +34,9 @@ export class TtlCache {
 
   /** Wait for the pending persistent writes to finish. */
   async flush(): Promise<void> {
-    while (this.diskWrites.size > 0) {
-      await Promise.all([...this.diskWrites]);
-    }
+    // Drain a snapshot once: writeToDisk keeps appending to diskWrites while
+    // the writes are in flight, so re-reading the set can loop forever.
+    await Promise.all([...this.diskWrites]);
   }
 
   private writeToDisk(key: string, value: unknown, ttlMs: number, storedAt: number): void {
