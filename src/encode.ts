@@ -83,6 +83,8 @@ export interface NutrientSelection {
   micronutrients: MicronutrientSpec[];
   /** The units of every nutrient the response returns. */
   units: Record<string, string>;
+  /** True when the carbon tier is part of every row (max_carbon or sort_by carbonFootprint). */
+  includeCarbon: boolean;
 }
 
 export class SelectionError extends Error {
@@ -106,6 +108,7 @@ export class SelectionError extends Error {
 export function selectNutrients(
   requested: string[] | undefined,
   constrained: string[] = [],
+  includeCarbon = false,
 ): NutrientSelection {
   const keys: string[] = [];
   const micronutrients: MicronutrientSpec[] = [];
@@ -161,7 +164,7 @@ export function selectNutrients(
     else addKey(resolved.key);
   }
 
-  return { keys, micronutrients, units };
+  return { keys, micronutrients, units, includeCarbon };
 }
 
 /** The units of the nutrients a selection returns. */
@@ -187,10 +190,9 @@ export function rowFields(selection: NutrientSelection, withDates = false): stri
     'traits',
     'allergens',
     'mhealthyTier',
-    'calories',
-    'servingSize',
-    'servingSizeGrams',
   ];
+  if (selection.includeCarbon) fields.push('carbonFootprint');
+  fields.push('calories', 'servingSize', 'servingSizeGrams');
   if (withDates) fields.push('dates');
   for (const key of selection.keys) fields.push(key);
   for (const spec of selection.micronutrients) fields.push(spec.field);
@@ -236,6 +238,8 @@ export function encodeDish(
     dish.nutrition?.servingSize ?? null,
     parseServingSizeGrams(dish.nutrition?.servingSize ?? null),
   ];
+
+  if (selection.includeCarbon) encoded.splice(7, 0, dish.carbonFootprint);
 
   if (dish.dates) encoded.push(dish.dates);
 

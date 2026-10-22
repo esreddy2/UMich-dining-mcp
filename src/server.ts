@@ -619,7 +619,7 @@ export function createServer(): McpServer {
           sort_order: args.sort_order,
           limit: args.limit,
         });
-        const selection = selectNutrients(args.include_nutrients);
+        const selection = selectNutrients(args.include_nutrients, [], args.sort_by === 'carbonFootprint');
         return ok(encodeResponse(result.matches, selection, {
           query: result.query,
           date: result.dateRange ? undefined : result.date,
@@ -712,9 +712,9 @@ export function createServer(): McpServer {
           .string()
           .optional()
           .describe(
-            'The field to sort on: a nutrient key (calories, sodium, protein, totalFat, …), a ' +
-              'micronutrient name (Iron, Calcium, …), or one of proteinToCalorie and fiberToCalorie. ' +
-              'An unknown field is refused.',
+            'The field to sort on: a nutrient key (calories, sodium, protein, totalFat, …), ' +
+              'carbonFootprint, a micronutrient name (Iron, Calcium, …), or one of ' +
+              'proteinToCalorie and fiberToCalorie. An unknown field is refused.',
           ),
         sort_order: z
           .enum(['asc', 'desc'])
@@ -769,7 +769,11 @@ export function createServer(): McpServer {
         if (args.max_sodium_mg !== undefined || args.min_sodium_mg !== undefined) {
           if (!fallback.includes('sodium')) fallback.push('sodium');
         }
-        const selection = selectNutrients(args.include_nutrients, fallback);
+        const selection = selectNutrients(
+          args.include_nutrients,
+          fallback,
+          args.max_carbon !== undefined || args.sort_by === 'carbonFootprint',
+        );
         return ok(encodeResponse(result.matches, selection, {
           date: result.dateRange ? undefined : result.date,
           dateRange: result.dateRange,

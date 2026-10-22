@@ -162,6 +162,58 @@ describe('server', () => {
     expect(filterPayload.note).toMatch(/allergen/i);
   });
 
+  it('reports the carbon tier only when max_carbon or a carbon sort asks for it', async () => {
+    mockFixtureFetch();
+
+    // No constraint: no carbon in the row.
+    const plain = await client.callTool({
+      name: 'search_dishes',
+      arguments: { query: 'oatmeal' },
+    });
+    const plainPayload = plain.structuredContent as {
+      fields: string[];
+      matches: unknown[][];
+    };
+    expect(plainPayload.fields).not.toContain('carbonFootprint');
+
+    // max_carbon brings the carbon tier into every row.
+    const capped = await client.callTool({
+      name: 'filter_dishes',
+      arguments: { hall: 'bursley', max_carbon: 2 },
+    });
+    expect(capped.isError).toBeFalsy();
+    const cappedPayload = capped.structuredContent as {
+      fields: string[];
+      matches: unknown[][];
+    };
+    const carbon = cappedPayload.fields.indexOf('carbonFootprint');
+    expect(carbon).toBeGreaterThanOrEqual(0);
+    const mhealthy = cappedPayload.fields.indexOf('mhealthyTier');
+    expect(carbon).toBe(mhealthy + 1);
+    for (const row of cappedPayload.matches) {
+      const value = row[carbon] as number | null;
+      expect(value === null || value <= 2).toBe(true);
+    }
+
+    // sort_by carbonFootprint brings the carbon tier into every row, sorted.
+    const sorted = await client.callTool({
+      name: 'search_dishes',
+      arguments: { query: 'oatmeal', hall: 'bursley', sort_by: 'carbonFootprint', sort_order: 'asc' },
+    });
+    expect(sorted.isError).toBeFalsy();
+    const sortedPayload = sorted.structuredContent as {
+      fields: string[];
+      matches: unknown[][];
+    };
+    const sortedCarbon = sortedPayload.fields.indexOf('carbonFootprint');
+    expect(sortedCarbon).toBeGreaterThanOrEqual(0);
+    const values = sortedPayload.matches.map(
+      (row) => (row[sortedCarbon] as number | null) ?? Number.MAX_SAFE_INTEGER,
+    );
+    const ordered = [...values].sort((a, b) => a - b);
+    expect(values).toEqual(ordered);
+  });
+
   it('takes a list of halls and an empty list of them', async () => {
     mockFixtureFetch();
 

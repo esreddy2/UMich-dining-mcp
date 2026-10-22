@@ -118,6 +118,33 @@ describe('the coded row', () => {
     expect(response.fields).not.toContain('carbonFootprint');
   });
 
+  it('leaves the carbon tier out unless max carbon or a carbon sort asks for it', () => {
+    const defaultResponse = encodeResponse([dish()], selectNutrients(undefined));
+    expect(defaultResponse.fields).not.toContain('carbonFootprint');
+
+    const carbonResponse = encodeResponse(
+      [dish()],
+      selectNutrients(undefined, [], true),
+    );
+    expect(carbonResponse.fields).toEqual([
+      'hall',
+      'meal',
+      'station',
+      'name',
+      'traits',
+      'allergens',
+      'mhealthyTier',
+      'carbonFootprint',
+      'calories',
+      'servingSize',
+      'servingSizeGrams',
+    ]);
+    const row = carbonResponse.matches[0]!;
+    expect(at(row, 'carbonFootprint', carbonResponse.fields)).toBe(2);
+    expect(at(row, 'mhealthyTier', carbonResponse.fields)).toBe(3);
+    expect(at(row, 'calories', carbonResponse.fields)).toBe(320);
+  });
+
   it('carries the serving size and its weight in grams', () => {
     const response = encodeResponse([dish()], selectNutrients(undefined));
     const row = response.matches[0]!;
