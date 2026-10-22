@@ -315,6 +315,8 @@ describe('the contract of the server', () => {
     })) as ToolResult;
     const payload = result.structuredContent as {
       name: string;
+      meal: number;
+      station: number;
       nutrition: { calories: number | null; servingSize: string | null };
       warning: string;
       key: { meals: Record<string, string>; stations: Record<string, string> };
