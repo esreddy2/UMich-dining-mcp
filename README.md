@@ -88,7 +88,7 @@ Cursor, with `npx -y umich-dining-mcp` as the command.
 | Tool | What it does |
 |---|---|
 | `list_locations` | The ten halls with address, phone, e-mail, map link, today's service periods, whether they are open right now, and whether they have a gluten-free pantry. |
-| `get_menu` | The menu of one hall: meals, stations and dishes, with the coded traits and allergens, the density and carbon tiers, the calories and the serving size. |
+| `get_menu` | The menu of one hall for the meal it is serving right now: meals, stations and dishes, with the coded traits and allergens, the density and carbon tiers, the calories and the serving size. Name one meal or several to get them instead. |
 | `search_dishes` | Find dishes by name, in the halls that are named or across all of them (case-insensitive substring match), on one day or over a range. |
 | `filter_dishes` | Filter the menus by allergen, trait, nutrient density, carbon footprint, nutrients, calories and sodium, in the halls that are named or across all of them, on one day or over a range. |
 | `list_nutrition_fields` | The supported nutrient names, their units and the Daily Value basis of the micronutrients. |

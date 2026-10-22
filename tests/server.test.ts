@@ -2,7 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Client, InMemoryTransport } from '@modelcontextprotocol/client';
 import { cache } from '../src/cache.js';
 import { createServer } from '../src/server.js';
-import { mockFixtureFetch } from './helpers.js';
+import { mockFixtureFetch, readFixture, withDeclaredDate } from './helpers.js';
 
 function resourceText(result: { contents: unknown[] }): string {
   const first = result.contents[0] as { text?: string } | undefined;
@@ -87,9 +87,9 @@ describe('server', () => {
     expect(payload.failures).toEqual([]);
   });
 
-  it('calls get_menu and returns the meals of a hall', async () => {
+  it('calls get_menu and serves the meal it was asked for', async () => {
     mockFixtureFetch();
-    const result = await client.callTool({ name: 'get_menu', arguments: { hall: 'bursley' } });
+    const result = await client.callTool({ name: 'get_menu', arguments: { hall: 'bursley', meal: 'Lunch' } });
     expect(result.isError).toBeFalsy();
     const payload = result.structuredContent as {
       hall: string;
@@ -102,15 +102,84 @@ describe('server', () => {
       noMenu: boolean;
     };
     expect(payload.hall).toBe('bursley');
-    expect(payload.totalStations).toBe(22);
-    expect(payload.totalItems).toBe(69);
-    // The meals are codes now, and the key resolves them.
-    expect(Object.keys(payload.key.meals).sort()).toEqual(['1', '3', '4']);
-    const meals = payload.meals.map((meal) => payload.key.meals[String(meal.meal)]);
-    expect(meals.sort()).toEqual(['Breakfast', 'Dinner', 'Lunch']);
+    expect(payload.meals).toHaveLength(1);
+    expect(payload.key.meals[String(payload.meals[0]!.meal)]).toBe('Lunch');
+    const lunch = payload.meals[0]!.stations;
+    expect(lunch.length).toBeGreaterThan(0);
+    expect(payload.totalItems).toBe(26);
+    expect(payload.totalStations).toBe(lunch.length);
     expect(payload.otherMeals).toEqual([]);
     expect(payload.unknownMealLabels).toEqual([]);
     expect(payload.noMenu).toBe(false);
+  });
+
+  it('calls get_menu and serves several meals at once', async () => {
+    mockFixtureFetch();
+    const result = await client.callTool({
+      name: 'get_menu',
+      arguments: { hall: 'bursley', meal: ['Breakfast', 'Dinner'] },
+    });
+    expect(result.isError).toBeFalsy();
+    const payload = result.structuredContent as {
+      totalStations: number;
+      totalItems: number;
+      key: { meals: Record<string, string> };
+      meals: { meal: number; stations: { station: number; items: unknown[] }[] }[];
+    };
+    expect(payload.meals).toHaveLength(2);
+    const names = payload.meals.map((meal) => payload.key.meals[String(meal.meal)]);
+    expect(names).toEqual(['Breakfast', 'Dinner']);
+    const items = payload.meals.reduce(
+      (sum, meal) => sum + meal.stations.reduce((inner, station) => inner + station.items.length, 0),
+      0,
+    );
+    expect(items).toBe(13 + 30);
+    expect(payload.totalItems).toBe(items);
+    expect(payload.totalStations).toBe(
+      payload.meals.reduce((sum, meal) => sum + meal.stations.length, 0),
+    );
+  });
+
+  it('narrows to a known meal on a dated page', async () => {
+    vi.stubGlobal('fetch', async (input: string | URL | Request): Promise<Response> => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      if (url.includes('regularhours')) {
+        return new Response(readFixture('regularhours.html'), { status: 200 });
+      }
+      const body = readFixture('brunch-only.html');
+      return new Response(withDeclaredDate(body, '2026-10-25'), { status: 200 });
+    });
+    const result = await client.callTool({ name: 'get_menu', arguments: { hall: 'bursley', meal: 'Brunch', date: '2026-10-25' } });
+    expect(result.isError).toBeFalsy();
+    const payload = result.structuredContent as {
+      meals: { meal: number; stations: { items: unknown[] }[] }[];
+      totalItems: number;
+      key: { meals: Record<string, string> };
+    };
+    expect(payload.meals).toHaveLength(1);
+    expect(payload.key.meals[String(payload.meals[0]!.meal)]).toBe('Brunch');
+    expect(payload.totalItems).toBe(2);
+  });
+
+  it('filters the asked meal down to one station', async () => {
+    mockFixtureFetch();
+    const result = await client.callTool({
+      name: 'get_menu',
+      arguments: { hall: 'bursley', meal: 'Lunch', station: 'Deli' },
+    });
+    expect(result.isError).toBeFalsy();
+    const payload = result.structuredContent as {
+      key: { meals: Record<string, string>; stations: Record<string, string> };
+      meals: { meal: number; stations: { station: number; items: unknown[] }[] }[];
+      totalItems: number;
+    };
+    expect(payload.meals).toHaveLength(1);
+    expect(payload.key.meals[String(payload.meals[0]!.meal)]).toBe('Lunch');
+    const stations = payload.meals[0]!.stations;
+    expect(stations).toHaveLength(1);
+    expect(payload.key.stations[String(stations[0]!.station)]).toBe('Deli');
+    expect(stations[0]!.items.length).toBeGreaterThan(0);
+    expect(payload.totalItems).toBe(stations[0]!.items.length);
   });
 
   it('rejects a hall the model made up', async () => {

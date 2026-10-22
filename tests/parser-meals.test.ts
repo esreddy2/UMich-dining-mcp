@@ -129,7 +129,7 @@ describe('a meal the sweep has to reach', () => {
       return new Response(withDeclaredDate(body, '2026-10-25'), { status: 200 });
     });
 
-    const page = await getMenu('bursley', '2026-10-25');
+    const page = await getMenu('bursley', '2026-10-25', 'Brunch');
     expect(page.menu.meals.Brunch).toHaveLength(2);
   });
 

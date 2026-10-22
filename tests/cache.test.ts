@@ -12,11 +12,11 @@ describe('cache', () => {
 
   it('makes one upstream request for ten concurrent identical calls', async () => {
     const mock = mockFixtureFetch();
-    const pages = await Promise.all(Array.from({ length: 10 }, () => getMenu('bursley')));
+    const pages = await Promise.all(Array.from({ length: 10 }, () => getMenu('bursley', undefined, 'Lunch')));
 
     expect(mock.calls).toHaveLength(1);
     for (const page of pages) {
-      expect(countItems(page.menu.meals)).toBe(69);
+      expect(countItems(page.menu.meals), 'Lunch at Bursley').toBe(26);
     }
   });
 

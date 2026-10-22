@@ -3,22 +3,10 @@ import { cache } from './cache.js';
 import { fetchText, HttpError } from './http.js';
 import { HALLS, REGULAR_HOURS_PATH, getHallDefinition } from './halls.js';
 import { parseLocationDetails, type LocationDetails } from './parser/location.js';
-import { parseMenuPage, ParseError, type ParsedMenu } from './parser/menu.js';
+import { parseMenuPage, ParseError, type ParsedMenu, MEAL_BY_LABEL } from './parser/menu.js';
 import { parseRegularHours, parseTimeRange, parseTodaysHours } from './parser/hours.js';
 import { load } from 'cheerio';
-import type {
-  DiningHall,
-  HallId,
-  HallHours,
-  LocationSummary,
-  MealName,
-  Menu,
-  RegularHours,
-  ServicePeriod,
-  Station,
-  Nutrition,
-  CarbonLevel,
-} from './types.js';
+import { MEAL_NAMES, type DiningHall, type HallId, type HallHours, type LocationSummary, type MealName, type Menu, type RegularHours, type ServicePeriod, type Station, type Nutrition, type CarbonLevel } from './types.js';
 import { ALLERGEN_REMINDER } from './taxonomy.js';
 import {
   MICRONUTRIENT_SPECS,
@@ -116,6 +104,10 @@ interface HallPage {
   cached: boolean;
   /** Why the menu could not be parsed, when it could not be. */
   menuError: string | null;
+  /** The meals the response was narrowed to; empty when the hall is serving nothing. */
+  selectedMeals: MealName[];
+  /** Why the narrowed meals carry no items, when they do. */
+  mealNote: string | null;
 }
 
 /** The location of a hall whose location block could not be read. */
@@ -368,6 +360,8 @@ export async function loadHallPage(
     stale,
     cached,
     menuError: value.menuError,
+    selectedMeals: [],
+    mealNote: null,
   };
 }
 
@@ -378,8 +372,22 @@ export async function loadHallPage(
  * page declares is compared with the requested one: when the site falls back
  * to another day's menu the call fails instead of returning data that belongs
  * to a different day.
+ *
+ * The meals of the answer are the ones that were asked for, which may be one
+ * meal or several, or the one the hall is serving right now: the service
+ * periods of the day pick it, the period whose range contains now is the
+ * current meal, and when the hall is not serving the next meal is the period
+ * with the smallest start time after now. A period whose label this server has
+ * no slot for is skipped. The page is narrowed to those meals: a meal with no
+ * items is named in a note rather than hidden, and a hall that is serving
+ * nothing yields the closed note.
  */
-export async function getMenu(hallId: HallId, date?: string): Promise<HallPage> {
+export async function getMenu(
+  hallId: HallId,
+  date?: string,
+  meal?: MealName | MealName[],
+  now: Date = new Date(),
+): Promise<HallPage> {
   const today = todayIn();
   const requested = date ?? today;
   validateDate(requested, today);
@@ -390,7 +398,88 @@ export async function getMenu(hallId: HallId, date?: string): Promise<HallPage> 
     throw new ServiceError(`No menu is published for ${requested} at ${page.hall.name}.`);
   }
 
-  return page;
+  const asked = meal === undefined ? autoMeals(page.periods, now) : askedMeals(meal);
+  const meals: Record<MealName, Station[]> = { Breakfast: [], Brunch: [], Lunch: [], Dinner: [] };
+  for (const name of asked) {
+    meals[name] = page.menu.meals[name];
+  }
+
+  // A meal that carries no items is named in the note, not dropped: the
+  // reader has to know that the hall published nothing for it.
+  const itemCount = (stations: Station[]): number =>
+    stations.reduce((sum, station) => sum + station.items.length, 0);
+  const empty = asked.filter((name) => itemCount(meals[name]) === 0);
+  let mealNote: string | null = null;
+  if (asked.length === 0) {
+    mealNote = `${page.hall.name} is not serving anything on ${requested}.`;
+  } else if (empty.length > 0) {
+    mealNote = `Nothing is published for ${empty.join(' and ')} at ${page.hall.name} on ${requested}.`;
+  }
+
+  return {
+    ...page,
+    menu: { ...page.menu, meals, otherMeals: [] },
+    selectedMeals: asked,
+    mealNote,
+  };
+}
+
+/**
+ * The meals that were asked for, in the order of the day.
+ *
+ * The order does not depend on the order of the request, so the same request
+ * always returns the same answer. A meal that is asked for twice is served
+ * once.
+ */
+function askedMeals(meal: MealName | MealName[]): MealName[] {
+  const wanted = Array.isArray(meal) ? meal : [meal];
+  return MEAL_NAMES.filter((name) => wanted.includes(name));
+}
+
+/**
+ * The meal the hall is serving at a given moment.
+ *
+ * The periods are the source of truth. A period whose half-open range
+ * contains now is the current meal; several periods may share a start time,
+ * so the open candidates are sorted by start time and the first one wins.
+ * When nothing contains now, the next meal is the non-closed period with the
+ * smallest start time after now. Closed periods and labels outside the meal
+ * vocabulary are skipped; when nothing qualifies the hall is closed.
+ */
+function selectMeal(periods: ServicePeriod[], timeZone: string, now: Date): MealName | null {
+  const current = minutesNow(timeZone, now);
+  const candidates: { period: ServicePeriod; range: { start: number; end: number }; meal: MealName }[] = [];
+
+  for (const period of periods) {
+    if (period.closed) continue;
+    const range = parseTimeRange(period.times);
+    if (!range) continue;
+    const meal = MEAL_BY_LABEL[period.label.trim().toLowerCase()];
+    if (!meal) continue;
+    candidates.push({ period, range, meal });
+  }
+
+  const open = candidates.filter((candidate) => isOpenAtMinutes([candidate.period], current));
+  open.sort((a, b) => a.range.start - b.range.start);
+  const chosen = open[0];
+  if (chosen) return chosen.meal;
+
+  const later = candidates.filter((candidate) => candidate.range.start > current);
+  later.sort((a, b) => a.range.start - b.range.start);
+  const next = later[0];
+  if (next) return next.meal;
+
+  return null;
+}
+
+/**
+ * The meal the hall is serving right now, as the list of the meals to serve.
+ *
+ * The list holds one meal, or none when the hall is serving nothing.
+ */
+function autoMeals(periods: ServicePeriod[], now: Date): MealName[] {
+  const meal = selectMeal(periods, config.timezone, now);
+  return meal === null ? [] : [meal];
 }
 
 /**
