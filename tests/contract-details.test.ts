@@ -46,7 +46,7 @@ describe('a truncated answer', () => {
 
   it('says so when the rows were cut short', async () => {
     const result = (await client.callTool({
-      name: 'search_dishes',
+      name: 'filter_dishes',
       arguments: { query: 'a', limit: 2 },
     })) as { structuredContent?: { totalMatches: number; truncated: boolean; matches: unknown[]; note?: string } };
 
@@ -60,7 +60,7 @@ describe('a truncated answer', () => {
 
   it('does not say so when the rows are all there', async () => {
     const result = (await client.callTool({
-      name: 'search_dishes',
+      name: 'filter_dishes',
       arguments: { query: 'oatmeal', limit: 50 },
     })) as { structuredContent?: { totalMatches: number; truncated: boolean; matches: unknown[] } };
 

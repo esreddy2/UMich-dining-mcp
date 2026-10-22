@@ -76,10 +76,14 @@ export const MICRONUTRIENT_SPECS: MicronutrientSpec[] = [
   { name: 'Iron', field: 'iron', publishedUnit: '%DV', dailyValue: 18, dailyValueUnit: 'mg', derivedUnit: 'mg' },
 ];
 
-const MICRONUTRIENT_BY_LOWER_NAME = new Map(MICRONUTRIENT_SPECS.map((spec) => [spec.name.toLowerCase(), spec]));
+const normalizeNutrientName = (name: string): string => name.trim().toLowerCase().replace(/[\s\-_]/g, '');
+
+const MICRONUTRIENT_BY_LOWER_NAME = new Map(MICRONUTRIENT_SPECS.map((spec) => [normalizeNutrientName(spec.name), spec]));
+const MICRONUTRIENT_BY_FIELD = new Map(MICRONUTRIENT_SPECS.map((spec) => [normalizeNutrientName(spec.field), spec]));
 
 export function micronutrientSpec(name: string): MicronutrientSpec | null {
-  return MICRONUTRIENT_BY_LOWER_NAME.get(name.trim().toLowerCase()) ?? null;
+  const wanted = normalizeNutrientName(name);
+  return MICRONUTRIENT_BY_LOWER_NAME.get(wanted) ?? MICRONUTRIENT_BY_FIELD.get(wanted) ?? null;
 }
 
 /** The rounding caveat that applies to every derived micronutrient amount. */
@@ -260,9 +264,12 @@ export function micronutrientAmount(
  */
 export function resolveNutrientName(name: string): { key: string; micronutrient: MicronutrientSpec | null } | null {
   const trimmed = name.trim();
-  const wanted = trimmed.toLowerCase();
-  const canonical = NUTRIENT_KEYS.find((key) => key.toLowerCase() === wanted);
+  const wanted = normalizeNutrientName(trimmed);
+  const canonical = NUTRIENT_KEYS.find((key) => normalizeNutrientName(key) === wanted);
   if (canonical) return { key: canonical, micronutrient: null };
+  // Accept the published label (e.g. "Total Fat") and field name (e.g. "totalFat").
+  const byLabel = NUTRIENT_SPECS.find((spec) => normalizeNutrientName(spec.label) === wanted);
+  if (byLabel) return { key: byLabel.key, micronutrient: null };
   const micro = micronutrientSpec(trimmed);
   if (micro) return { key: micro.name, micronutrient: micro };
   return null;
@@ -294,8 +301,8 @@ export const DEFAULT_SORT_ORDER = 'desc';
  * looks sorted and is not.
  */
 export function resolveSortField(name: string): string {
-  const wanted = name.trim();
-  const found = SORT_FIELDS.find((field) => field.toLowerCase() === wanted.toLowerCase());
+  const wanted = normalizeNutrientName(name);
+  const found = SORT_FIELDS.find((field) => normalizeNutrientName(field) === wanted);
   if (!found) {
     throw new NutrientError(
       `Unknown sort field "${name}". Use one of: ${SORT_FIELDS.join(', ')}.`,
@@ -323,7 +330,9 @@ export function resolveNutrientRange(name: string, range: NutrientRangeInput): R
   const { key, micronutrient } = resolved;
   const units = acceptedUnits(key);
   const requested = range.unit?.trim();
-  const unit = requested && requested.length > 0 ? requested : units[0]!;
+  const requestedLower = requested ? requested.toLowerCase() : '';
+  const matched = requested && requested.length > 0 ? units.find((candidate) => candidate.toLowerCase() === requestedLower) : undefined;
+  const unit = matched ?? (requested && requested.length > 0 ? requested : units[0]!);
 
   if (!units.includes(unit)) {
     throw new NutrientError(

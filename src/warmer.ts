@@ -28,7 +28,8 @@ export function warmerDays(today: string): string[] {
   const base = Date.parse(`${today}T00:00:00Z`);
   if (!Number.isFinite(base)) return [today];
   const days: string[] = [];
-  for (let offset = 0; offset <= config.dateWindow.maxDays; offset += 1) {
+  const minOffset = -3;
+  for (let offset = minOffset; offset <= config.dateWindow.maxDays; offset += 1) {
     days.push(new Date(base + offset * DAY_MS).toISOString().slice(0, 10));
   }
   return days;

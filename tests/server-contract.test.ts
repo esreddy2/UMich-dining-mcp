@@ -21,7 +21,6 @@ interface ToolResult {
 const TOOL_NAMES = [
   'list_locations',
   'get_menu',
-  'search_dishes',
   'filter_dishes',
   'get_hours',
   'find_open_now',
@@ -151,14 +150,14 @@ describe('the contract of the server', () => {
   });
 
   it('rejects an empty query', async () => {
-    const result = (await client.callTool({ name: 'search_dishes', arguments: { query: '' } })) as ToolResult;
+    const result = (await client.callTool({ name: 'filter_dishes', arguments: { query: '' } })) as ToolResult;
     expect(result.isError).toBe(true);
   });
 
   it('rejects a limit outside the range the server allows', async () => {
     for (const limit of [0, -1, 501]) {
       const result = (await client.callTool({
-        name: 'search_dishes',
+        name: 'filter_dishes',
         arguments: { query: 'oatmeal', limit },
       })) as ToolResult;
       expect(result.isError, String(limit)).toBe(true);
@@ -238,17 +237,14 @@ describe('the contract of the server', () => {
   it('lists the ten halls with their address and their map link', async () => {
     const result = (await client.callTool({ name: 'list_locations', arguments: {} })) as ToolResult;
     const payload = result.structuredContent as {
-      locations: { id: string; url: string; address: string | null; meals: string[] }[];
-      warning: string;
+      locations: { id: string; url: string; address: string | null }[];
     };
     expect(payload.locations).toHaveLength(10);
     for (const location of payload.locations) {
       expect(location.url, location.id).toMatch(/^https:\/\/dining\.umich\.edu\/menus-locations\//);
-      expect(location.meals.length, location.id).toBeGreaterThan(0);
     }
     const bursley = payload.locations.find((location) => location.id === 'bursley');
     expect(bursley?.address).toBe('1931 Duffield Street, Ann Arbor, MI, 48109');
-    expect(payload.warning).toMatch(/allergen/i);
   });
 
   it('reports the hours of every hall', async () => {
@@ -273,7 +269,7 @@ describe('the contract of the server', () => {
 
   it('searches and filters the dishes of the site', async () => {
     const search = (await client.callTool({
-      name: 'search_dishes',
+      name: 'filter_dishes',
       arguments: { query: 'oatmeal' },
     })) as ToolResult;
     const searchPayload = search.structuredContent as {
@@ -336,7 +332,7 @@ describe('the contract of the server', () => {
 
   it('returns the coded rows with a key that lists only what is used', async () => {
     const result = (await client.callTool({
-      name: 'search_dishes',
+      name: 'filter_dishes',
       arguments: { query: 'oatmeal', hall: 'bursley' },
     })) as ToolResult;
     const payload = result.structuredContent as {
@@ -493,8 +489,8 @@ describe('the contract of the server', () => {
       name: 'find_open_now',
       arguments: { at: '12:00' },
     })) as ToolResult;
-    const payload = result.structuredContent as { date: string; at: string | null; open: unknown[]; closed: unknown[] };
-    expect(payload.at).toBe('12:00');
+    const payload = result.structuredContent as { date: string; at: string; open: unknown[]; closed: unknown[] };
+    expect(payload.at).toBe('12:00 pm');
     expect(payload.open.length + payload.closed.length).toBe(10);
   });
 

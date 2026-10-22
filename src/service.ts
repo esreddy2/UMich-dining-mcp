@@ -64,9 +64,12 @@ export interface DishSearchResult {
   truncationNote?: string;
   /** True when a day of the answer was served from an expired cache entry. */
   stale: boolean;
+  /** Age of the data, as a human-readable string. */
+  asOf: string;
   coverage?: Coverage;
   /** The days whose page carried no menu. */
   emptyDates?: string[];
+  noMenu?: { hall: string; date: string }[];
   /** The meal labels the site used that this server cannot parse. */
   unknownMealLabels?: string[];
   /** A station that matched nothing, with the names that do exist. */
@@ -85,13 +88,17 @@ export interface DishFilterResult {
   truncationNote?: string;
   /** True when a day of the answer was served from an expired cache entry. */
   stale: boolean;
+  /** Age of the data, as a human-readable string. */
+  asOf: string;
   coverage?: Coverage;
   /** The days whose page carried no menu. */
   emptyDates?: string[];
+  noMenu?: { hall: string; date: string }[];
   /** The meal labels the site used that this server cannot parse. */
   unknownMealLabels?: string[];
   /** A station that matched nothing, with the names that do exist. */
   stationNote?: string;
+  filter?: Record<string, unknown>;
 }
 
 interface HallPage {
@@ -101,6 +108,8 @@ interface HallPage {
   location: LocationDetails;
   periods: ServicePeriod[];
   stale: boolean;
+  /** When the page was originally produced, in epoch milliseconds. */
+  storedAt: number;
   /** True when the page came from the cache rather than from the site. */
   cached: boolean;
   /** Why the menu could not be parsed, when it could not be. */
@@ -263,7 +272,7 @@ export async function loadHallPage(
   const key = `hall:${hallId}:${date}`;
   const ttl = ttlForDate(date, today);
 
-  const { value, stale, cached } = await cache.fetch(
+  const { value, stale, cached, storedAt } = await cache.fetch(
     key,
     ttl,
     async () => {
@@ -353,6 +362,7 @@ export async function loadHallPage(
     location: value.location,
     periods: value.periods,
     stale,
+    storedAt,
     cached,
     menuError: value.menuError,
     selectedMeals: [],
@@ -508,6 +518,19 @@ function minutesNow(timeZone: string, now: Date): number {
   return minutesIn(timeZone, now);
 }
 
+function weekdayName(isoDate: string): string {
+  const date = new Date(isoDate + 'T00:00:00Z');
+  return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][date.getUTCDay()]!;
+}
+
+function formatMinutesOfDay(minutes: number): string {
+  const h24 = Math.floor(minutes / 60) % 24;
+  const m = minutes % 60;
+  const meridiem = h24 >= 12 ? 'pm' : 'am';
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  return `${h12}:${String(m).padStart(2, '0')} ${meridiem}`;
+}
+
 /**
  * Parse a campus-local time of day, e.g. "12:30" or "7:05 pm", into the
  * number of minutes since midnight.
@@ -556,10 +579,11 @@ export function isOpenNow(periods: ServicePeriod[], now: Date = new Date()): boo
 }
 
 /** The ten halls with the service periods of the requested day. */
-export async function listLocations(date?: string, at?: string): Promise<{
+export async function listLocations(date?: string, at?: string, halls?: HallId[]): Promise<{
   date: string;
   locations: LocationSummary[];
   failures: { hall: HallId; hallName: string; error: string }[];
+  resolvedAt: string;
 }> {
   const today = todayIn();
   const requested = date ?? today;
@@ -567,9 +591,11 @@ export async function listLocations(date?: string, at?: string): Promise<{
   const now = new Date();
   const atMinutes = at === undefined ? minutesNow(config.timezone, now) : parseTimeOfDay(at);
 
+  const hallList = halls && halls.length > 0 ? HALLS.filter((h) => halls.includes(h.id)) : HALLS;
+
   const deadline = new Deadline();
   const settled = await Promise.all(
-    HALLS.map(async (hall) => {
+    hallList.map(async (hall) => {
       try {
         // The hours and the location are read even when the menu cannot be
         // parsed: a layout change in the menu is not a failure of the rest.
@@ -603,7 +629,8 @@ export async function listLocations(date?: string, at?: string): Promise<{
     else failures.push({ hall: entry.hall.id, hallName: entry.hall.name, error: entry.error ?? 'unknown error' });
   }
 
-  return { date: requested, locations, failures };
+  const resolvedAt = formatMinutesOfDay(atMinutes);
+  return { date: requested, locations, failures, resolvedAt };
 }
 
 /**
@@ -685,7 +712,9 @@ export function menuGroups(page: HallPage): { meal: string; stations: { name: st
 /** The service periods of a hall for the requested day, plus the weekly schedule. */
 export async function getHours(hallId?: HallId, date?: string): Promise<{
   date: string;
+  weekday: string;
   hours: HallHours[];
+  halls: HallHours[];
   failures: { hall: HallId; hallName: string; error: string }[];
 }> {
   const today = todayIn();
@@ -705,9 +734,11 @@ export async function getHours(hallId?: HallId, date?: string): Promise<{
         hall: hall.id,
         name: hall.name,
         date: requested,
+        weekday: weekdayName(requested),
         today: page.periods,
-        regular: regular.get(hall.id) ?? null,
+        regular: regular.get(hall.id) ? { weekly: regular.get(hall.id)!.weekly } : null,
         stale: page.stale,
+        asOf: `${Math.max(0, Math.round((Date.now() - page.storedAt) / 60000))} minutes ago`,
       };
     }),
   );
@@ -727,23 +758,23 @@ export async function getHours(hallId?: HallId, date?: string): Promise<{
     });
   });
 
-  return { date: requested, hours, failures };
+  return { date: requested, weekday: weekdayName(requested), hours, halls: hours, failures };
 }
 
 /** The halls that are serving at the given time of day. */
 export async function findOpenNow(date?: string, at?: string): Promise<{
   date: string;
-  at: string | null;
+  at: string;
   open: LocationSummary[];
-  closed: LocationSummary[];
+  closed: string[];
   failures: { hall: HallId; hallName: string; error: string }[];
 }> {
-  const { date: day, locations, failures } = await listLocations(date, at);
+  const { date: day, locations, failures, resolvedAt } = await listLocations(date, at);
   return {
     date: day,
-    at: at ?? null,
+    at: resolvedAt,
     open: locations.filter((summary) => summary.openNow),
-    closed: locations.filter((summary) => !summary.openNow),
+    closed: locations.filter((summary) => !summary.openNow).map((s) => s.id),
     failures,
   };
 }
@@ -826,14 +857,16 @@ interface Sweep {
   matches: DishMatch[];
   failures: { hall: HallId; hallName: string; error: string }[];
   coverage?: Coverage;
-  /** The days of the range whose page carried no menu. */
-  emptyDates: string[];
+  /** The (hall, date) pairs whose page carried no menu. */
+  noMenu: { hall: string; date: string }[];
   /** The meal labels the site used that this server cannot parse. */
   unknownMealLabels: string[];
   /** A station that matched nothing, with the names that do exist. */
   stationNote?: string;
   /** True when a day of the answer was served from an expired cache entry. */
   stale: boolean;
+  /** Age of the data, as a human-readable string. */
+  asOf: string;
 }
 
 /** The days of a range, inclusive of both ends. */
@@ -895,7 +928,7 @@ async function sweepMenus(options: SweepOptions, accept: (match: DishMatch) => b
   const matches: DishMatch[] = [];
   const failures: { hall: HallId; hallName: string; error: string }[] = [];
   const unknownMealLabels = new Set<string>();
-  const emptyDates = new Set<string>();
+  const noMenu = new Set<string>();
   const stationNames = new Set<string>();
   const matchedStations = new Set<string>();
 
@@ -905,6 +938,7 @@ async function sweepMenus(options: SweepOptions, accept: (match: DishMatch) => b
   let pending = 0;
   let failed = 0;
   let stale = 0;
+  let oldestStoredAt = Date.now();
 
   // The aggregation key of a range result: a dish is one row, whatever the
   // day it was seen on.
@@ -919,6 +953,11 @@ async function sweepMenus(options: SweepOptions, accept: (match: DishMatch) => b
   }
 
   const offset = Math.max(0, options.offset ?? 0);
+  if (pages.length > 0 && offset >= pages.length) {
+    throw new ServiceError(
+      `offset ${offset} is past the end of the range: it holds ${pages.length} pages, so the last valid offset is ${pages.length}. Ask again with offset ${pages.length}.`,
+    );
+  }
   const window = pages.slice(offset);
 
   // The offset of the first page the call did not serve. The next window of
@@ -952,6 +991,7 @@ async function sweepMenus(options: SweepOptions, accept: (match: DishMatch) => b
         }
         page = await loadHallPage(hall.id, date, today, { deadline });
         if (page.stale) stale += 1;
+        oldestStoredAt = Math.min(oldestStoredAt, page.storedAt);
         if (page.cached) cached += 1;
         else fetchedNow += 1;
       } catch (error) {
@@ -1010,7 +1050,7 @@ async function sweepMenus(options: SweepOptions, accept: (match: DishMatch) => b
       // The day has no menu only when the page itself carried no station.
       // A meal or a station filter that matched nothing is a different thing,
       // and the response must not say both.
-      if (pageStationCount === 0) emptyDates.add(date);
+      if (pageStationCount === 0) noMenu.add(`${hall.id}|${date}`);
     }
   }
 
@@ -1050,10 +1090,11 @@ async function sweepMenus(options: SweepOptions, accept: (match: DishMatch) => b
     matches,
     failures,
     coverage,
-    emptyDates: [...emptyDates].sort(),
+    noMenu: [...noMenu].map((key) => { const [hall, date] = key.split('|'); return { hall: hall!, date: date! }; }).sort((a, b) => a.date.localeCompare(b.date) || a.hall.localeCompare(b.hall)),
     unknownMealLabels: [...unknownMealLabels].sort(),
     stationNote,
     stale: stale > 0,
+    asOf: `${Math.max(0, Math.round((Date.now() - oldestStoredAt) / 60000))} minutes ago`,
   };
 }
 
@@ -1143,7 +1184,9 @@ export async function searchDishes(
     truncated: sweep.matches.length > limit,
     stale: sweep.stale,
     coverage: sweep.coverage,
-    emptyDates: sweep.emptyDates,
+    emptyDates: sweep.noMenu.map((entry) => entry.date),
+    noMenu: sweep.noMenu,
+    asOf: sweep.asOf,
     unknownMealLabels: sweep.unknownMealLabels,
     stationNote: sweep.stationNote,
     truncationNote: sweep.matches.length > limit ? truncatedNote(limit, sweep.matches.length, options.sort_by) : undefined,
@@ -1157,10 +1200,6 @@ export interface FilterOptions extends SweepOptions {
   require_traits?: string[];
   min_mhealthy?: number;
   max_carbon?: number;
-  max_calories?: number;
-  min_calories?: number;
-  max_sodium_mg?: number;
-  min_sodium_mg?: number;
   nutrients?: Record<string, NutrientRange>;
   query?: string;
   /** The meal to narrow the sweep to, as the site labels it. */
@@ -1175,6 +1214,9 @@ const CARBON_RANK: Record<number, number> = { 1: 1, 2: 2, 3: 3 };
 
 /** Filter the menus by allergen, trait, nutrient density, carbon and calories. */
 export async function filterDishes(options: FilterOptions = {}): Promise<DishFilterResult> {
+  if (options.query !== undefined && options.query.trim() === '') {
+    throw new ServiceError('The search query must not be empty.');
+  }
   const exclude = new Set(options.exclude_allergens ?? []);
   const require = options.require_traits ?? [];
 
@@ -1206,19 +1248,6 @@ export async function filterDishes(options: FilterOptions = {}): Promise<DishFil
     if (options.query) {
       if (!match.name.toLowerCase().includes(options.query.trim().toLowerCase())) return false;
     }
-    // backward compat calories
-    if (options.max_calories !== undefined) {
-      if (match.calories === null || match.calories > options.max_calories) return false;
-    }
-    if (options.min_calories !== undefined) {
-      if (match.calories === null || match.calories < options.min_calories) return false;
-    }
-    if (options.max_sodium_mg !== undefined) {
-      if (match.sodiumMg === null || match.sodiumMg > options.max_sodium_mg) return false;
-    }
-    if (options.min_sodium_mg !== undefined) {
-      if (match.sodiumMg === null || match.sodiumMg < options.min_sodium_mg) return false;
-    }
     // nutrients
     for (const range of ranges.values()) {
       const value = nutrientValueInUnit(range.key, range.unit, match.nutrition);
@@ -1246,10 +1275,25 @@ export async function filterDishes(options: FilterOptions = {}): Promise<DishFil
     truncated: sweep.matches.length > limit,
     stale: sweep.stale,
     coverage: sweep.coverage,
-    emptyDates: sweep.emptyDates,
+    emptyDates: sweep.noMenu.map((entry) => entry.date),
+    noMenu: sweep.noMenu,
+    asOf: sweep.asOf,
     unknownMealLabels: sweep.unknownMealLabels,
     stationNote: sweep.stationNote,
     truncationNote: sweep.matches.length > limit ? truncatedNote(limit, sweep.matches.length, options.sort_by) : undefined,
+    filter: {
+      excludeAllergens: options.exclude_allergens ?? [],
+      requireTraits: options.require_traits ?? [],
+      minMhealthy: options.min_mhealthy ?? null,
+      maxCarbon: options.max_carbon ?? null,
+      query: options.query ?? null,
+      hall: options.halls ?? null,
+      meal: options.meal ?? null,
+      station: options.station ?? null,
+      nutrients: options.nutrients ?? {},
+      sortBy: options.sort_by ?? null,
+      sortOrder: options.sort_order ?? null,
+    },
   };
 }
 
@@ -1381,8 +1425,28 @@ export async function getItemNutrition(
   const page = await loadHallPage(hallId, requested, today, { deadline: new Deadline() });
 
   const where = `at ${page.hall.name} on ${requested}`;
-  const all = candidatesOf(page, meal, station);
-  const candidates = all.filter((candidate) => candidate.name.toLowerCase().includes(needle));
+  const filtered = candidatesOf(page, meal, station);
+  const candidates = filtered.filter((candidate) => candidate.name.toLowerCase().includes(needle));
+
+  if (candidates.length === 0) {
+    const unrestricted = candidatesOf(page, undefined, undefined);
+    const elsewhere = unrestricted.filter((candidate) => candidate.name.toLowerCase().includes(needle));
+    if (elsewhere.length > 0) {
+      const meals = [...new Set(elsewhere.map((c) => c.meal))];
+      const stations = [...new Set(elsewhere.map((c) => c.station))];
+      const filterDesc = [
+        meal ? `in the ${meal} meal` : null,
+        station ? `at the ${station} station` : null,
+      ].filter(Boolean).join(' ');
+      const servedIn = meals.length > 0 ? meals.join(' and ') : stations.join(' and ');
+      throw new ServiceError(
+        `No dish called "${itemName}" is served at ${page.hall.name} on ${requested}` +
+          (filterDesc ? ` ${filterDesc}` : '') +
+          `. It is served in ${servedIn}; ask again with one of them, or without the filter.`,
+      );
+    }
+    throw new ServiceError(`No dish called "${itemName}" is served ${where}.`);
+  }
   const chosen = resolveDish(candidates, itemName, where);
 
   if (!chosen.nutrition) {

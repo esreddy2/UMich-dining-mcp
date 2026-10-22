@@ -20,9 +20,9 @@ describe('the warmer', () => {
 
   it('covers today and the published future window', () => {
     const days = warmerDays('2026-10-21');
-    expect(days[0]).toBe('2026-10-21');
-    expect(days).toHaveLength(15);
-    expect(days[1]).toBe('2026-10-22');
+    expect(days[0]).toBe('2026-10-18');
+    expect(days).toHaveLength(18);
+    expect(days[3]).toBe('2026-10-21');
   });
 
   it('warms a hall and a day without failing on the others', async () => {

@@ -4,7 +4,6 @@ import { HALLS } from './halls.js';
 import {
   ALLERGENS,
   ALLERGEN_CAVEAT,
-  ALLERGEN_REMINDER,
   ALLERGEN_SLUGS,
   BOOLEAN_TRAIT_SLUGS,
   CARBON_TIERS,
@@ -22,7 +21,6 @@ import {
   getMenu,
   listLocations,
   menuGroups,
-  searchDishes,
 } from './service.js';
 import { BlockedError, HttpError } from './http.js';
 import {
@@ -119,38 +117,31 @@ const weeklyHoursSchema = z.object({
   closed: z.boolean(),
 });
 
-const regularHoursSchema = z.object({
-  hall: hallIdSchema,
-  name: z.string(),
-  url: z.string().nullable(),
-  weekly: z.array(weeklyHoursSchema),
-});
 
 const locationSchema = z.object({
   id: hallIdSchema,
   name: z.string(),
-  path: z.string(),
   url: z.string(),
   residentsOnly: z.boolean(),
   glutenFreePantry: z.boolean(),
   address: z.string().nullable(),
   phone: z.string().nullable(),
   email: z.string().nullable(),
-  mapUrl: z.string().nullable(),
-  meals: z.array(mealNameSchema),
-  date: z.string(),
   today: z.array(servicePeriodSchema),
   openNow: z.boolean(),
   stale: z.boolean(),
+  asOf: z.string().optional(),
 });
 
 const hallHoursSchema = z.object({
   hall: hallIdSchema,
   name: z.string(),
   date: z.string(),
+  weekday: z.string().optional(),
   today: z.array(servicePeriodSchema),
-  regular: regularHoursSchema.nullable(),
+  regular: z.object({ weekly: z.array(weeklyHoursSchema) }).nullable(),
   stale: z.boolean(),
+  asOf: z.string().optional(),
 });
 
 /**
@@ -185,9 +176,9 @@ const failureSchema = z.object({
 
 const listLocationsOutput = z.object({
   date: z.string(),
+  mapUrlTemplate: z.string().optional(),
   locations: z.array(locationSchema),
   failures: z.array(failureSchema),
-  warning: z.string(),
 });
 
 const encodedStationSchema = z.object({
@@ -211,52 +202,15 @@ const getMenuOutput = z.object({
   note: z.string().optional(),
   /** The meals of the day, with the stations and the dishes of each. */
   meals: z.array(encodedMealSchema),
-  /** Meals the site published under a label this server has no slot for. */
-  otherMeals: z.array(
-    z.object({ label: z.string(), stations: z.array(encodedStationSchema) }),
-  ),
   /** Meal labels the site used that this server does not know. */
   unknownMealLabels: z.array(z.string()),
-  renderedDate: z.string().nullable(),
+  renderedDate: z.string().optional(),
   totalStations: z.number(),
   totalItems: z.number(),
-  /** True when the site published its "no menu" marker for this day. */
-  noMenu: z.boolean(),
   stale: z.boolean(),
+  asOf: z.string().optional(),
 });
 
-const searchDishesOutput = z.object({
-  key: keySchema,
-  units: z.record(z.string(), z.string()),
-  /** The names of the row positions, in the order the rows carry them. */
-  fields: fieldsSchema,
-  note: z.string().optional(),
-  query: z.string(),
-  date: z.string().optional(),
-  dateRange: z.object({ from: z.string(), to: z.string() }).optional(),
-  totalMatches: z.number(),
-  /** True when the rows were cut short by the limit. */
-  truncated: z.boolean(),
-  /** True when a day of the answer was served from an expired cache entry. */
-  stale: z.boolean(),
-  /** The days of the range whose page carried no menu. */
-  emptyDates: z.array(z.string()),
-  matches: z.array(encodedDishSchema),
-  failures: z.array(failureSchema),
-  coverage: z
-    .object({
-      requested: z.number(),
-      cached: z.number(),
-      fetchedNow: z.number(),
-      pending: z.number(),
-      failed: z.number(),
-      stale: z.number(),
-      offset: z.number(),
-      pages: z.number(),
-      nextOffset: z.number().nullable(),
-    })
-    .optional(),
-});
 
 const filterDishesOutput = z.object({
   key: keySchema,
@@ -272,7 +226,11 @@ const filterDishesOutput = z.object({
   /** True when a day of the answer was served from an expired cache entry. */
   stale: z.boolean(),
   /** The days of the range whose page carried no menu. */
-  emptyDates: z.array(z.string()),
+  emptyDates: z.array(z.string()).optional(),
+  noMenu: z.array(z.object({ hall: z.string(), date: z.string() })).optional(),
+  asOf: z.string().optional(),
+  filter: z.record(z.string(), z.unknown()).optional(),
+  nutrients: z.array(z.string()).optional(),
   matches: z.array(encodedDishSchema),
   failures: z.array(failureSchema),
   coverage: z
@@ -292,15 +250,18 @@ const filterDishesOutput = z.object({
 
 const getHoursOutput = z.object({
   date: z.string(),
+  weekday: z.string().optional(),
+  hours: z.array(hallHoursSchema).optional(),
   halls: z.array(hallHoursSchema),
   failures: z.array(failureSchema),
+  asOf: z.string().optional(),
 });
 
 const findOpenNowOutput = z.object({
   date: z.string(),
-  at: z.string().nullable(),
+  at: z.string(),
   open: z.array(locationSchema),
-  closed: z.array(locationSchema),
+  closed: z.array(hallIdSchema),
   failures: z.array(failureSchema),
 });
 
@@ -378,6 +339,7 @@ function fail(error: unknown): { content: { type: 'text'; text: string }[]; isEr
  * held no menu and the meal labels this server cannot parse.
  */
 function extraNotes(result: {
+  noMenu?: { hall: string; date: string }[];
   emptyDates?: string[];
   unknownMealLabels?: string[];
   stationNote?: string;
@@ -385,6 +347,7 @@ function extraNotes(result: {
   truncated?: boolean;
   truncationNote?: string;
   totalMatches?: number;
+  coverage?: { pending?: number; pages?: number; nextOffset?: number | null };
 }): string[] {
   const notes: string[] = [];
   if (result.truncated) {
@@ -400,8 +363,24 @@ function extraNotes(result: {
         'the "dates" of a row are the days it appeared on.',
     );
   }
-  if (result.emptyDates && result.emptyDates.length > 0) {
+  if (result.noMenu && result.noMenu.length > 0) {
+    const byDate = new Map<string, string[]>();
+    for (const entry of result.noMenu) {
+      const list = byDate.get(entry.date) ?? [];
+      list.push(entry.hall);
+      byDate.set(entry.date, list);
+    }
+    for (const [date, halls] of byDate) {
+      notes.push(`No menu published at: ${date} (${halls.join(', ')}).`);
+    }
+  } else if (result.emptyDates && result.emptyDates.length > 0) {
     notes.push(`No menu published on: ${result.emptyDates.join(', ')}.`);
+  }
+  if (result.coverage && (result.coverage.pending ?? 0) > 0) {
+    notes.push(
+      `${result.coverage.pending} of ${result.coverage.pages} pages were not read; ` +
+        'ask again with the next offset to continue.',
+    );
   }
   if (result.unknownMealLabels && result.unknownMealLabels.length > 0) {
     notes.push(
@@ -438,14 +417,33 @@ export function createServer(): McpServer {
         'plans are out of scope.',
       inputSchema: z.strictObject({
         date: dateSchema.optional().describe('The day to read. Defaults to today.'),
+        hall: hallIdSchema.optional().describe('Keep only this hall.'),
       }),
       outputSchema: listLocationsOutput,
       annotations: READ_ONLY_WORLD,
     },
     async (args) => {
       try {
-        const { date, locations, failures } = await listLocations(args.date);
-        return ok({ date, locations, failures, warning: ALLERGEN_REMINDER });
+        const { date, locations, failures } = await listLocations(args.date, undefined, args.hall ? [args.hall] : undefined);
+        const slim = locations.map((loc) => ({
+          id: loc.id,
+          name: loc.name,
+          url: loc.url,
+          residentsOnly: loc.residentsOnly,
+          glutenFreePantry: loc.glutenFreePantry,
+          address: loc.address,
+          phone: loc.phone,
+          email: loc.email,
+          today: loc.today,
+          openNow: loc.openNow,
+          stale: loc.stale,
+        }));
+        return ok({
+          date,
+          mapUrlTemplate: 'https://www.google.com/maps/search/?api=1&query={address}',
+          locations: slim,
+          failures,
+        });
       } catch (error) {
         return fail(error);
       }
@@ -483,6 +481,7 @@ export function createServer(): McpServer {
       try {
         const page = await getMenu(args.hall, args.date, args.meal);
         let groups = menuGroups(page);
+        const allStationNames = [...new Set(groups.flatMap((g) => g.stations.map((st) => st.name)))];
 
         if (args.station) {
           const wanted = args.station.toLowerCase();
@@ -490,6 +489,12 @@ export function createServer(): McpServer {
             meal: group.meal,
             stations: group.stations.filter((station) => station.name.toLowerCase() === wanted),
           }));
+          const matched = groups.some((g) => g.stations.length > 0);
+          if (!matched && allStationNames.length > 0) {
+            const stationNote = `No station called "${args.station}" was found. The stations are: ${allStationNames.sort().slice(0, 20).join(', ')}.`;
+            // store to push later
+            (groups as { _stationNote?: string })._stationNote = stationNote;
+          }
         }
 
         const totalStations = groups.reduce((sum, group) => sum + group.stations.length, 0);
@@ -500,6 +505,8 @@ export function createServer(): McpServer {
 
         const selection = selectNutrients(args.include_nutrients);
         const notes: string[] = [];
+        const pendingStationNote = (groups as { _stationNote?: string })._stationNote;
+        if (pendingStationNote) notes.push(pendingStationNote);
         if (page.mealNote) notes.push(page.mealNote);
         if (page.menu.unknownMealLabels.length > 0) {
           notes.push(
@@ -508,98 +515,21 @@ export function createServer(): McpServer {
           );
         }
 
+        const menuNotes = [...notes];
+        if (args.meal === undefined) {
+          menuNotes.unshift(`Meal chosen automatically: ${page.selectedMeals.join(', ')}.`);
+        }
         return ok(encodeMenu(groups, selection, {
           hall: page.hall.id,
           hallName: page.hall.name,
           date: page.date,
-          otherMeals: [],
           unknownMealLabels: page.menu.unknownMealLabels,
-          renderedDate: page.menu.renderedDate,
+          ...(page.menu.renderedDate ? { renderedDate: page.menu.renderedDate } : {}),
           totalStations,
           totalItems,
-          noMenu: page.menu.noMenu,
           stale: page.stale,
-        }, notes));
-      } catch (error) {
-        return fail(error);
-      }
-    },
-  );
-
-  server.registerTool(
-    'search_dishes',
-    {
-      title: 'Search dishes',
-      description:
-        'Search dish names across the dining halls, or within the halls that are named. The match is a ' +
-        'case-insensitive substring match on the dish name. A single day is searched by default; ' +
-        '"from" and "to" search a range of days, and each row then lists the days the dish ' +
-        'appeared on. The rows carry codes: read key.halls, key.meals, key.stations, key.traits ' +
-        'and key.allergens to resolve them. The rows are arrays: the "fields" list names the ' +
-        'positions, in order. The row always carries the calories and the serving ' +
-        'size; every other nutrient, the sodium included, is asked for with include_nutrients. ' +
-        'mhealthyTier is 1 (Nutrient Dense Low) to 5 (Nutrient ' +
-        'Dense High). The rows are returned in the order asked for, and "limit" takes the first of them: the default is 50.',
-      inputSchema: z.strictObject({
-        query: z.string().min(1).describe('Text to look for in the dish names.'),
-        hall: hallsSchema,
-        date: dateSchema.optional().describe('A single day to search. Cannot be combined with from/to.'),
-        from: dateSchema.optional().describe('The first day of a range to search.'),
-        to: dateSchema.optional().describe('The last day of a range to search. Defaults to the last published day.'),
-        offset: z
-          .number()
-          .int()
-          .min(0)
-          .optional()
-          .describe('How many pages of the range to skip. The response names the offset of the next page.'),
-        meal: mealNameSchema.optional().describe('Keeps only that meal.'),
-        station: z.string().optional().describe('Keeps only that station.'),
-        include_nutrients: z
-          .array(z.string())
-          .optional()
-          .describe('The nutrients to return, by canonical key or by published name, or ["all"].'),
-        sort_by: z
-          .string()
-          .optional()
-          .describe('The field to sort on, e.g. "calories" or "protein". The default order is by hall, meal and name.'),
-        sort_order: z.enum(['asc', 'desc']).optional().describe('The direction of the sort. The default is descending.'),
-        limit: z
-          .number()
-          .int()
-          .min(1)
-          .max(500)
-          .optional()
-          .describe('How many rows to return, the first of them in the order asked for. Defaults to 50; ask again with a larger limit for more.'),
-      }),
-      outputSchema: searchDishesOutput,
-      annotations: READ_ONLY_WORLD,
-    },
-    async (args) => {
-      try {
-        const result = await searchDishes(args.query, {
-          halls: hallList(args.hall),
-          date: args.date,
-          from: args.from,
-          to: args.to,
-          offset: args.offset,
-          meal: args.meal,
-          station: args.station,
-          sort_by: args.sort_by,
-          sort_order: args.sort_order,
-          limit: args.limit,
-        });
-        const selection = selectNutrients(args.include_nutrients, [], args.sort_by === 'carbonFootprint');
-        return ok(encodeResponse(result.matches, selection, {
-          query: result.query,
-          date: result.dateRange ? undefined : result.date,
-          dateRange: result.dateRange,
-          totalMatches: result.totalMatches,
-          truncated: result.truncated,
-          stale: result.stale,
-          emptyDates: result.emptyDates ?? [],
-          failures: result.failures,
-          coverage: result.coverage,
-        }, extraNotes(result)));
+          asOf: `${Math.max(0, Math.round((Date.now() - page.storedAt) / 60000))} minutes ago`,
+        }, menuNotes));
       } catch (error) {
         return fail(error);
       }
@@ -649,10 +579,6 @@ export function createServer(): McpServer {
         max_carbon: carbonSchema
           .optional()
           .describe('The highest acceptable carbon footprint: 1 (low), 2 (medium) or 3 (high). The dishes the site did not tag are dropped.'),
-        max_calories: z.number().nonnegative().optional().describe('The highest acceptable number of calories.'),
-        min_calories: z.number().nonnegative().optional().describe('The lowest acceptable number of calories.'),
-        max_sodium_mg: z.number().nonnegative().optional().describe('The highest acceptable amount of sodium, in mg.'),
-        min_sodium_mg: z.number().nonnegative().optional().describe('The lowest acceptable amount of sodium, in mg.'),
         nutrients: z
           .record(
             z.string(),
@@ -717,10 +643,6 @@ export function createServer(): McpServer {
           require_traits: args.require_traits,
           min_mhealthy: args.min_mhealthy,
           max_carbon: args.max_carbon,
-          max_calories: args.max_calories,
-          min_calories: args.min_calories,
-          max_sodium_mg: args.max_sodium_mg,
-          min_sodium_mg: args.min_sodium_mg,
           nutrients: args.nutrients,
           query: args.query,
           meal: args.meal,
@@ -735,9 +657,6 @@ export function createServer(): McpServer {
           limit: args.limit,
         });
         const fallback = Object.keys(args.nutrients ?? {});
-        if (args.max_sodium_mg !== undefined || args.min_sodium_mg !== undefined) {
-          if (!fallback.includes('sodium')) fallback.push('sodium');
-        }
         const selection = selectNutrients(
           args.include_nutrients,
           fallback,
@@ -750,8 +669,11 @@ export function createServer(): McpServer {
           truncated: result.truncated,
           stale: result.stale,
           emptyDates: result.emptyDates ?? [],
+          noMenu: result.noMenu ?? [],
+          asOf: result.asOf,
           failures: result.failures,
           coverage: result.coverage,
+          filter: result.filter,
         }, extraNotes(result)));
       } catch (error) {
         return fail(error);
@@ -846,8 +768,9 @@ export function createServer(): McpServer {
     },
     async (args) => {
       try {
-        const { date, hours, failures } = await getHours(args.hall, args.date);
-        return ok({ date, halls: hours, failures });
+        const { date, weekday, hours, failures } = await getHours(args.hall, args.date);
+        const asOf = hours[0]?.asOf;
+        return ok({ date, weekday, hours, halls: hours, failures, asOf });
       } catch (error) {
         return fail(error);
       }
@@ -875,7 +798,20 @@ export function createServer(): McpServer {
     async (args) => {
       try {
         const { date, at, open, closed, failures } = await findOpenNow(args.date, args.at);
-        return ok({ date, at, open, closed, failures });
+        const slimOpen = open.map((loc) => ({
+          id: loc.id,
+          name: loc.name,
+          url: loc.url,
+          residentsOnly: loc.residentsOnly,
+          glutenFreePantry: loc.glutenFreePantry,
+          address: loc.address,
+          phone: loc.phone,
+          email: loc.email,
+          today: loc.today,
+          openNow: loc.openNow,
+          stale: loc.stale,
+        }));
+        return ok({ date, at, open: slimOpen, closed, failures });
       } catch (error) {
         return fail(error);
       }

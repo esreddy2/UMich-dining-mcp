@@ -13,7 +13,6 @@ function resourceText(result: { contents: unknown[] }): string {
 const TOOL_NAMES = [
   'list_locations',
   'get_menu',
-  'search_dishes',
   'filter_dishes',
   'get_hours',
   'find_open_now',
@@ -97,9 +96,7 @@ describe('server', () => {
       totalItems: number;
       key: { meals: Record<string, string> };
       meals: { meal: number; stations: { station: number; items: unknown[] }[] }[];
-      otherMeals: unknown[];
       unknownMealLabels: string[];
-      noMenu: boolean;
     };
     expect(payload.hall).toBe('bursley');
     expect(payload.meals).toHaveLength(1);
@@ -108,9 +105,7 @@ describe('server', () => {
     expect(lunch.length).toBeGreaterThan(0);
     expect(payload.totalItems).toBe(26);
     expect(payload.totalStations).toBe(lunch.length);
-    expect(payload.otherMeals).toEqual([]);
     expect(payload.unknownMealLabels).toEqual([]);
-    expect(payload.noMenu).toBe(false);
   });
 
   it('calls get_menu and serves several meals at once', async () => {
@@ -197,7 +192,7 @@ describe('server', () => {
 
   it('calls search_dishes and filter_dishes', async () => {
     mockFixtureFetch();
-    const search = await client.callTool({ name: 'search_dishes', arguments: { query: 'oatmeal' } });
+    const search = await client.callTool({ name: 'filter_dishes', arguments: { query: 'oatmeal' } });
     expect(search.isError).toBeFalsy();
     const searchPayload = search.structuredContent as {
       totalMatches: number;
@@ -236,7 +231,7 @@ describe('server', () => {
 
     // No constraint: no carbon in the row.
     const plain = await client.callTool({
-      name: 'search_dishes',
+      name: 'filter_dishes',
       arguments: { query: 'oatmeal' },
     });
     const plainPayload = plain.structuredContent as {
@@ -266,7 +261,7 @@ describe('server', () => {
 
     // sort_by carbonFootprint brings the carbon tier into every row, sorted.
     const sorted = await client.callTool({
-      name: 'search_dishes',
+      name: 'filter_dishes',
       arguments: { query: 'oatmeal', hall: 'bursley', sort_by: 'carbonFootprint', sort_order: 'asc' },
     });
     expect(sorted.isError).toBeFalsy();
@@ -287,7 +282,7 @@ describe('server', () => {
     mockFixtureFetch();
 
     const one = (await client.callTool({
-      name: 'search_dishes',
+      name: 'filter_dishes',
       arguments: { query: 'oatmeal', hall: ['bursley'] },
     })) as {
       isError?: boolean;
@@ -297,7 +292,7 @@ describe('server', () => {
     expect(Object.keys(one.structuredContent!.key.halls)).toEqual(['1']);
 
     const two = (await client.callTool({
-      name: 'search_dishes',
+      name: 'filter_dishes',
       arguments: { query: 'oatmeal', hall: ['bursley', 'markley'] },
     })) as { structuredContent?: { key: { halls: Record<string, string> } } };
     expect(Object.keys(two.structuredContent!.key.halls).sort()).toEqual(['1', '3']);
@@ -305,13 +300,13 @@ describe('server', () => {
     // An empty list is every hall, and a single hall may still be named on
     // its own.
     const all = (await client.callTool({
-      name: 'search_dishes',
+      name: 'filter_dishes',
       arguments: { query: 'oatmeal', hall: [] },
     })) as { structuredContent?: { key: { halls: Record<string, string> } } };
     expect(Object.keys(all.structuredContent!.key.halls).length).toBeGreaterThan(2);
 
     const single = (await client.callTool({
-      name: 'search_dishes',
+      name: 'filter_dishes',
       arguments: { query: 'oatmeal', hall: 'bursley' },
     })) as { structuredContent?: { key: { halls: Record<string, string> } } };
     expect(Object.keys(single.structuredContent!.key.halls)).toEqual(['1']);

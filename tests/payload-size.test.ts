@@ -25,7 +25,7 @@ describe('the size of a sweep answer', () => {
 
   it('keeps a row far below the size of the data it replaces', async () => {
     const result = (await client.callTool({
-      name: 'search_dishes',
+      name: 'filter_dishes',
       arguments: { query: 'a', hall: 'bursley', limit: 50 },
     })) as { structuredContent?: { matches?: unknown[] } };
 
@@ -44,7 +44,7 @@ describe('the size of a sweep answer', () => {
 
   it('keeps the key block small', async () => {
     const result = (await client.callTool({
-      name: 'search_dishes',
+      name: 'filter_dishes',
       arguments: { query: 'a', hall: 'bursley', limit: 50 },
     })) as { structuredContent?: { key?: unknown } };
 
