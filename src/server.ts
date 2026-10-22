@@ -413,10 +413,9 @@ export function createServer(): McpServer {
     {
       title: 'List dining halls',
       description:
-        'List the ten University of Michigan dining halls with their address, phone, e-mail, map link, ' +
-        'the service periods published for the requested day, whether they are serving right now, and ' +
-        'whether they have a gluten-free pantry. Cafes, markets, bakeries, grills, prices and meal ' +
-        'plans are out of scope.',
+        'List the dining halls and their service periods for the day, with whether they are open now. ' +
+        'openNow is evaluated at the current campus-local time. Cafes, markets, bakeries, grills, ' +
+        'prices and meal plans are out of scope.',
       inputSchema: z.strictObject({
         date: dateSchema.optional().describe('The day to read. Defaults to today.'),
         hall: hallIdSchema.optional().describe('Keep only this hall.'),
@@ -751,9 +750,10 @@ export function createServer(): McpServer {
     {
       title: 'Get dining hall hours',
       description:
-        "Get the service periods published for a dining hall on the requested day, together with the " +
-        "hall's regular weekly schedule. Without a hall argument every hall is returned. A hall that " +
-        "cannot be read is reported in the failures and the other halls are still returned.",
+        "Get the service periods published for a dining hall on the requested day, plus the regular " +
+        "weekly schedule. today is the day's published service periods and regular is the weekly schedule. " +
+        "A hall that cannot be read is reported in the failures and the other halls are still returned. " +
+        "The response carries the weekday name of the requested date.",
       inputSchema: z.strictObject({
         hall: hallIdSchema.optional().describe('One hall, or every hall.'),
         date: dateSchema.optional().describe('The day to read. Defaults to today.'),
@@ -777,8 +777,9 @@ export function createServer(): McpServer {
     {
       title: 'Find halls that are open now',
       description:
-        'Return the dining halls that are serving at the given time of day, and the ones that are not, ' +
-        'with the service periods of the day. Without arguments the current campus-local time is used.',
+        'The dining halls that are serving at the given time of day, and the ids of the ones that are not, ' +
+        'with the service periods of the day for the halls that are open. Without arguments the current ' +
+        'campus-local time is used, and the response says which time it resolved.',
       inputSchema: z.strictObject({
         date: dateSchema.optional().describe('The day to look at. Defaults to today.'),
         at: z
@@ -818,11 +819,10 @@ export function createServer(): McpServer {
     {
       title: 'Get a dish nutrition panel',
       description:
-        "Get the full nutrition panel of one dish, including the serving size, calories, the fat, " +
-        "cholesterol, sodium, carbohydrate and protein values and the micronutrients. The dish name " +
-        'is matched case-insensitively; an exact match wins, otherwise a unique substring match is ' +
-        'used and an ambiguous name is reported rather than guessed. ' +
-        ALLERGEN_CAVEAT,
+        "Get the full nutrition panel of one dish. The dish name is matched case-insensitively; an " +
+        "exact match wins, otherwise a unique substring match is used and an ambiguous name is " +
+        "reported rather than guessed. The panel values carry their unit; the micronutrient amount " +
+        "is the derived amount, with the published percent behind it. " + ALLERGEN_CAVEAT,
       inputSchema: z.strictObject({
         hall: hallIdSchema.describe('The dining hall to read.'),
         item: z.string().min(1).describe('The dish name.'),
