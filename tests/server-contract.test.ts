@@ -2,6 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Client, InMemoryTransport } from '@modelcontextprotocol/client';
 import { cache } from '../src/cache.js';
 import { createServer } from '../src/server.js';
+import { rowFields, selectNutrients } from '../src/encode.js';
 import { HALL_FIXTURES, fixtureResponse, mockFixtureFetch } from './helpers.js';
 
 /**
@@ -251,13 +252,15 @@ describe('the contract of the server', () => {
     const result = (await client.callTool({ name: 'get_hours', arguments: {} })) as ToolResult;
     const payload = result.structuredContent as {
       date: string;
-      halls: { hall: string; today: unknown[]; regular: { weekly: unknown[] } | null }[];
+      weekly: Record<string, unknown[]>;
+      halls: { hall: string; today: unknown[]; weekly: string | null }[];
     };
     expect(payload.halls).toHaveLength(10);
     expect(payload.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     for (const hall of payload.halls) {
       expect(hall.today.length, hall.hall).toBeGreaterThan(0);
-      expect(hall.regular?.weekly.length, hall.hall).toBeGreaterThan(0);
+      expect(hall.weekly, hall.hall).toBeTruthy();
+      expect(payload.weekly[hall.weekly!]?.length, hall.hall).toBeGreaterThan(0);
     }
   });
 
@@ -274,13 +277,12 @@ describe('the contract of the server', () => {
     })) as ToolResult;
     const searchPayload = search.structuredContent as {
       totalMatches: number;
-      fields: string[];
       key: { halls: Record<string, string>; meals: Record<string, string>; traits: Record<string, string> };
       note?: string;
       matches: unknown[][];
     };
-    const name = searchPayload.fields.indexOf('name');
-    const hall = searchPayload.fields.indexOf('hall');
+    const name = 3;
+    const hall = 0;
     expect(searchPayload.totalMatches).toBeGreaterThan(0);
     for (const match of searchPayload.matches) {
       expect(String(match[name]).toLowerCase()).toContain('oatmeal');
@@ -294,14 +296,13 @@ describe('the contract of the server', () => {
     })) as ToolResult;
     const filterPayload = filter.structuredContent as {
       totalMatches: number;
-      fields: string[];
       key: { allergens: Record<string, string>; traits: Record<string, string> };
       matches: unknown[][];
     };
     const milk = Object.entries(filterPayload.key.allergens).find(([, slug]) => slug === 'milk')?.[0];
     const vegetarian = Object.entries(filterPayload.key.traits).find(([, slug]) => slug === 'vegetarian')?.[0];
-    const allergens = filterPayload.fields.indexOf('allergens');
-    const traits = filterPayload.fields.indexOf('traits');
+    const allergens = 5;
+    const traits = 4;
     for (const match of filterPayload.matches) {
       if (milk) expect((match[allergens] as number[]).map(String)).not.toContain(milk);
       if (vegetarian) expect((match[traits] as number[]).map(String)).toContain(vegetarian);
@@ -337,22 +338,24 @@ describe('the contract of the server', () => {
     const payload = result.structuredContent as {
       key: Record<string, Record<string, string>>;
       units: Record<string, string>;
-      fields: string[];
       date: string;
       matches: unknown[][];
     };
 
-    const at = (row: unknown[], field: string): unknown => row[payload.fields.indexOf(field)];
-    const hall = payload.fields.indexOf('hall');
-    const meal = payload.fields.indexOf('meal');
-    const station = payload.fields.indexOf('station');
-    const traits = payload.fields.indexOf('traits');
-    const allergens = payload.fields.indexOf('allergens');
+    // Default sweep row layout (no carbon, no nutrients, single day):
+    // [hall, meal, station, name, traits, allergens, mhealthyTier, calories, servingSize, servingSizeGrams]
+    const fields = rowFields(selectNutrients(undefined), false, false);
+    const at = (row: unknown[], field: string): unknown => row[fields.indexOf(field)];
+    const hall = fields.indexOf('hall');
+    const meal = fields.indexOf('meal');
+    const station = fields.indexOf('station');
+    const traits = fields.indexOf('traits');
+    const allergens = fields.indexOf('allergens');
 
     expect(payload.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(payload.matches.length).toBeGreaterThan(0);
     for (const row of payload.matches) {
-      expect(row).toHaveLength(payload.fields.length);
+      expect(row).toHaveLength(fields.length);
       expect(row[hall]).toBe(1);
       expect(row[meal]).toBeGreaterThanOrEqual(1);
       expect(row[meal]).toBeLessThanOrEqual(4);
@@ -390,16 +393,16 @@ describe('the contract of the server', () => {
     })) as ToolResult;
     const payload = result.structuredContent as {
       units: Record<string, string>;
-      fields: string[];
       matches: unknown[][];
     };
+    const fields = rowFields(selectNutrients(['protein', 'Iron']), false, false);
     expect(payload.units.protein).toBe('g');
     expect(payload.units.iron).toBe('mg');
-    expect(payload.fields).toContain('protein');
-    expect(payload.fields).toContain('iron');
+    expect(fields).toContain('protein');
+    expect(fields).toContain('iron');
     expect(payload.matches.length).toBeGreaterThan(0);
     for (const row of payload.matches) {
-      expect(row).toHaveLength(payload.fields.length);
+      expect(row).toHaveLength(fields.length);
     }
   });
 
@@ -410,14 +413,14 @@ describe('the contract of the server', () => {
     })) as ToolResult;
     const payload = result.structuredContent as {
       units: Record<string, string>;
-      fields: string[];
       matches: unknown[][];
     };
+    const fields = rowFields(selectNutrients(undefined, ['protein']), false, false);
     expect(payload.units.protein).toBe('g');
-    expect(payload.fields).toContain('protein');
+    expect(fields).toContain('protein');
     expect(payload.matches.length).toBeGreaterThan(0);
     for (const row of payload.matches) {
-      expect(row).toHaveLength(payload.fields.length);
+      expect(row).toHaveLength(fields.length);
     }
   });
 
@@ -428,14 +431,14 @@ describe('the contract of the server', () => {
     })) as ToolResult;
     const payload = result.structuredContent as {
       units: Record<string, string>;
-      fields: string[];
       matches: unknown[][];
     };
+    const fields = rowFields(selectNutrients(undefined, ['Iron']), false, false);
     expect(payload.units.iron).toBe('mg');
-    expect(payload.fields).toContain('iron');
+    expect(fields).toContain('iron');
     expect(payload.matches.length).toBeGreaterThan(0);
     for (const row of payload.matches) {
-      expect(row).toHaveLength(payload.fields.length);
+      expect(row).toHaveLength(fields.length);
     }
   });
 
@@ -446,12 +449,12 @@ describe('the contract of the server', () => {
     })) as ToolResult;
     const payload = result.structuredContent as {
       units: Record<string, string>;
-      fields: string[];
       matches: unknown[][];
     };
+    const fields = rowFields(selectNutrients(undefined), false, false);
     expect(payload.units).toBeUndefined();
-    expect(payload.fields).not.toContain('protein');
-    expect(payload.fields).not.toContain('iron');
+    expect(fields).not.toContain('protein');
+    expect(fields).not.toContain('iron');
     expect(payload.matches.length).toBeGreaterThan(0);
   });
 

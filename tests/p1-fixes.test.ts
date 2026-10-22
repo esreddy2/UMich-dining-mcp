@@ -80,8 +80,8 @@ describe('a hall that cannot be read', () => {
       return response ?? new Response('not found', { status: 404 });
     });
 
-    const { hours, failures } = await getHours();
-    expect(hours).toHaveLength(9);
+    const { halls, failures } = await getHours();
+    expect(halls).toHaveLength(9);
     expect(failures).toHaveLength(1);
     expect(failures[0]?.hall).toBe('markley');
   });

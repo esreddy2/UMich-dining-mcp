@@ -92,3 +92,46 @@ describe('the size of a sweep answer', () => {
     expect(payload.omittedItems).toBeUndefined();
   });
 });
+
+describe('token budgets', () => {
+  let client: Client;
+
+  beforeEach(async () => {
+    vi.unstubAllGlobals();
+    mockFixtureFetch();
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    const server = createServer();
+    await server.connect(serverTransport);
+    client = new Client({ name: 'umich-dining-mcp-budget', version: '1.0.0' });
+    await client.connect(clientTransport);
+  });
+
+  it('keeps tools/list under the fixed-cost budget', async () => {
+    const tools = await client.listTools();
+    expect(JSON.stringify(tools).length).toBeLessThan(24_000);
+  });
+
+  it('keeps find_open_now small', async () => {
+    const result = (await client.callTool({
+      name: 'find_open_now',
+      arguments: { at: '02:30' },
+    })) as { structuredContent?: unknown };
+    expect(JSON.stringify(result.structuredContent).length).toBeLessThan(1_000);
+  });
+
+  it('keeps list_locations small', async () => {
+    const result = (await client.callTool({
+      name: 'list_locations',
+      arguments: {},
+    })) as { structuredContent?: unknown };
+    expect(JSON.stringify(result.structuredContent).length).toBeLessThan(5_200);
+  });
+
+  it('keeps get_hours small', async () => {
+    const result = (await client.callTool({
+      name: 'get_hours',
+      arguments: {},
+    })) as { structuredContent?: unknown };
+    expect(JSON.stringify(result.structuredContent).length).toBeLessThan(5_600);
+  });
+});

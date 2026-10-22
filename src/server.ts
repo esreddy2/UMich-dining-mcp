@@ -77,7 +77,7 @@ function hallList(hall: string | string[] | undefined): HallId[] | undefined {
 const hallsSchema = z
   .union([hallIdSchema, z.array(hallIdSchema).max(HALL_IDS.length)])
   .optional()
-  .describe('The halls to search: one hall, or a list of them. Leave it out, or pass an empty list, for every hall.');
+  .describe('Halls: one, a list, or none for all.');
 const mealNameSchema = z.enum(MEAL_NAMES);
 /**
  * The meals to keep: one name, or a list of them.
@@ -95,13 +95,13 @@ const carbonSchema = z.number().int().min(1).max(3);
 const servicePeriodSchema = z.object({
   label: z.string(),
   times: z.string(),
-  closed: z.boolean(),
+  closed: z.boolean().optional(),
 });
 
 const weeklyHoursSchema = z.object({
   days: z.array(z.string()),
   periods: z.array(servicePeriodSchema),
-  closed: z.boolean(),
+  closed: z.boolean().optional(),
 });
 
 
@@ -126,7 +126,7 @@ const hallHoursSchema = z.object({
   date: z.string(),
   weekday: z.string().optional(),
   today: z.array(servicePeriodSchema),
-  regular: z.object({ weekly: z.array(weeklyHoursSchema) }).nullable(),
+  weekly: z.string().nullable(),
   stale: z.boolean(),
   asOf: z.string().optional(),
 });
@@ -151,9 +151,6 @@ const encodedDishSchema = z.array(
 );
 
 const keySchema = z.record(z.string(), z.record(z.string(), z.string()));
-
-/** The names of the row positions, in the order the rows carry them. */
-const fieldsSchema = z.array(z.string());
 
 const failureSchema = z.object({
   hall: hallIdSchema,
@@ -184,8 +181,6 @@ const getMenuOutput = z.object({
   date: z.string(),
   key: keySchema,
   units: z.record(z.string(), z.string()).optional(),
-  /** The names of the row positions, in the order the rows carry them. */
-  fields: fieldsSchema,
   note: z.string().optional(),
   /** The meals of the day, with the stations and the dishes of each. */
   meals: z.array(encodedMealSchema),
@@ -203,8 +198,6 @@ const getMenuOutput = z.object({
 const filterDishesOutput = z.object({
   key: keySchema,
   units: z.record(z.string(), z.string()).optional(),
-  /** The names of the row positions, in the order the rows carry them. */
-  fields: fieldsSchema,
   note: z.string().optional(),
   date: z.string().optional(),
   dateRange: z.object({ from: z.string(), to: z.string() }).optional(),
@@ -240,16 +233,27 @@ const filterDishesOutput = z.object({
 const getHoursOutput = z.object({
   date: z.string(),
   weekday: z.string().optional(),
-  hours: z.array(hallHoursSchema).optional(),
+  weekly: z.record(z.string(), z.array(weeklyHoursSchema)).optional(),
   halls: z.array(hallHoursSchema),
   failures: z.array(failureSchema),
+  asOf: z.string().optional(),
+});
+
+const openHallSchema = z.object({
+  id: hallIdSchema,
+  name: z.string(),
+  residentsOnly: z.boolean(),
+  glutenFreePantry: z.boolean(),
+  today: z.array(servicePeriodSchema),
+  openNow: z.boolean(),
+  stale: z.boolean(),
   asOf: z.string().optional(),
 });
 
 const findOpenNowOutput = z.object({
   date: z.string(),
   at: z.string(),
-  open: z.array(locationSchema),
+  open: z.array(openHallSchema),
   closed: z.array(hallIdSchema),
   failures: z.array(failureSchema),
 });
@@ -274,7 +278,7 @@ const itemNutritionOutput = z.object({
 const dateSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Dates use the YYYY-MM-DD format.')
-  .describe('Calendar date in YYYY-MM-DD. The site publishes menus for today-3 days to today+14 days.');
+  .describe('Date YYYY-MM-DD. Site publishes today-3..+14 days.');
 
 function ok(payload: unknown): {
   content: { type: 'text'; text: string }[];
@@ -397,8 +401,10 @@ export function createServer(): McpServer {
       title: 'List dining halls',
       description:
         'List the dining halls and their service periods for the day, with whether they are open now. ' +
-        'openNow is evaluated at the current campus-local time. Cafes, markets, bakeries, grills, ' +
-        'prices and meal plans are out of scope.',
+        'openNow is evaluated at the current campus-local time. The entries are the halls and their ' +
+        'service periods for the day. stale means a page was served from an expired cache entry; ' +
+        'asOf is the age of the data. Cafes, markets, bakeries, grills, prices and meal plans are ' +
+        'out of scope.',
       inputSchema: z.strictObject({
         date: dateSchema.optional().describe('The day to read. Defaults to today.'),
         hall: hallIdSchema.optional().describe('Keep only this hall.'),
@@ -439,14 +445,13 @@ export function createServer(): McpServer {
     {
       title: 'Get a dining hall menu',
       description:
-        'Get the menu of one dining hall: the meals, the stations and the dishes. The dish rows are arrays; ' +
-        'positions are [name, traits, allergens, mhealthyTier, calories, servingSize, servingSizeGrams] ' +
-        'plus the nutrients named by include_nutrients. traits are the six boolean traits as codes ' +
-        '(1 glutenfree, 2 halal, 3 kosher, 4 spicy, 5 vegan, 6 vegetarian); allergens are codes; ' +
-        'read the key block to resolve every code. mhealthyTier is 1 (Nutrient Dense Low) to 5 (Nutrient Dense High). ' +
-        'Calories are in kcal. With no meal the menu of the meal being served now is returned, or the next one ' +
-        'when the hall is closed; the response says which meal it chose. The date defaults to today; the site ' +
-        'publishes menus for today-3 days to today+14 days. ' + ALLERGEN_CAVEAT,
+        'Get the menu of one dining hall: meals, stations and dishes. Dish rows are arrays: [name, traits, ' +
+        'allergens, mhealthyTier, calories, servingSize, servingSizeGrams] plus nutrients named by ' +
+        'include_nutrients (a get_menu row never carries carbonFootprint). traits are codes 1-6 (glutenfree, ' +
+        'halal, kosher, spicy, vegan, vegetarian); allergens are codes; read the key block. mhealthyTier 1-5. ' +
+        'Calories kcal. With no meal, the meal being served now is returned (or the next one if closed); the ' +
+        'response says which and why. Date defaults to today; site publishes today-3..+14. stale means an ' +
+        'expired cache entry; asOf data age. Allergens advisory.',
       inputSchema: z.strictObject({
         hall: hallIdSchema.describe('The dining hall to read.'),
         date: dateSchema.optional().describe('The day to read. Defaults to today.'),
@@ -457,7 +462,7 @@ export function createServer(): McpServer {
         include_nutrients: z
           .array(z.string())
           .optional()
-          .describe('The nutrients to return, by canonical key or by published name, or ["all"].'),
+          .describe('Nutrients to return, by key/name, or ["all"].'),
       }),
       outputSchema: getMenuOutput,
       annotations: READ_ONLY_WORLD,
@@ -527,16 +532,17 @@ export function createServer(): McpServer {
     {
       title: 'Filter dishes',
       description:
-        'Filter the dining hall menus by allergen, trait, nutrient density, carbon footprint, calories, ' +
-        'sodium and name. Every parameter is optional; with no parameter at all this lists every dish published ' +
-        'for the day. Allergens: alcohol, beef, coconut, eggs, fish, item-is-deep-fried, milk, oats, peanuts, ' +
-        'pork, sesame-seed, shellfish, soy, tree-nuts, wheat_barley_rye. exclude_allergens drops every dish ' +
-        'carrying any of them. Traits: glutenfree, halal, kosher, spicy, vegan, vegetarian. require_traits keeps ' +
-        'only the dishes carrying all of them. min_mhealthy: keep tiers >= this (1-5). max_carbon: keep tiers <= ' +
-        'this (1 low, 2 medium, 3 high). A dish the site did not tag is dropped by both. nutrients: a range per ' +
-        'nutrient, e.g. {"protein":{"min":20,"unit":"g"}}. query: case-insensitive substring of the dish name. ' +
-        'Response: matches holds the rows, fields names row positions, key resolves codes, units gives units, ' +
-        'filter echoes the filter applied, flags says what the answer does not cover. ' + ALLERGEN_CAVEAT,
+        'Filter dining hall menus by allergen, trait, nutrient density, carbon, calories, sodium and name. ' +
+        'All params optional; no params lists every dish for the day. Allergens: alcohol, beef, coconut, eggs, ' +
+        'fish, item-is-deep-fried, milk, oats, peanuts, pork, sesame-seed, shellfish, soy, tree-nuts, ' +
+        'wheat_barley_rye. Traits: glutenfree, halal, kosher, spicy, vegan, vegetarian. min_mhealthy: keep ' +
+        'tiers >= (1-5). max_carbon: keep tiers <= (1 low, 2 medium, 3 high). Untagged dropped by both. ' +
+        'nutrients: range per nutrient, e.g. {"protein":{"min":20,"unit":"g"}}. query: case-insensitive ' +
+        'substring. Rows are arrays: [hall, meal, station, name, traits, allergens, mhealthyTier] plus ' +
+        'carbonFootprint when max_carbon or sort_by carbon, then calories, servingSize, servingSizeGrams, ' +
+        'dates in a range, then nutrients named by include_nutrients. traits are codes 1-6; allergens are ' +
+        'codes; read the key. Response: matches rows, key resolves codes, units, filter echo, flags coverage, ' +
+        'note prose. stale means expired cache entry; asOf data age. Allergens advisory.',
       inputSchema: z.strictObject({
         exclude_allergens: z
           .array(allergenSchema)
@@ -569,25 +575,18 @@ export function createServer(): McpServer {
             }),
           )
           .optional()
-          .describe(
-            'A range per nutrient, e.g. {"protein": {"min": 20, "unit": "g"}}. A constraint on a nutrient ' +
-              'excludes the dishes that publish no value for it.',
-          ),
+          .describe('Range per nutrient, e.g. {"protein":{"min":20,"unit":"g"}}. A constraint drops dishes with no value.'),
         include_nutrients: z
           .array(z.string())
           .optional()
-          .describe('The nutrients to return, by canonical key or by published name, or ["all"].'),
+          .describe('Nutrients to return, by key/name, or ["all"].'),
         query: z.string().optional().describe('A case-insensitive substring of the dish name.'),
         meal: mealNameSchema.optional().describe('Keeps only that meal.'),
         station: z.string().optional().describe('Keeps only that station.'),
         sort_by: z
           .string()
           .optional()
-          .describe(
-            'The field to sort on: a nutrient key (calories, sodium, protein, totalFat, …), ' +
-              'carbonFootprint, a micronutrient name (Iron, Calcium, …), or one of ' +
-              'proteinToCalorie and fiberToCalorie. An unknown field is refused.',
-          ),
+          .describe('Sort field: nutrient key, carbonFootprint, micronutrient name, or proteinToCalorie/fiberToCalorie.'),
         sort_order: z
           .enum(['asc', 'desc'])
           .optional()
@@ -601,14 +600,14 @@ export function createServer(): McpServer {
           .int()
           .min(0)
           .optional()
-          .describe('How many pages of the range to skip. The response names the offset of the next page.'),
+          .describe('Pages of the range to skip.'),
         limit: z
           .number()
           .int()
           .min(1)
           .max(500)
           .optional()
-          .describe('How many rows to return, the first of them in the order asked for. Defaults to 50; ask again with a larger limit for more.'),
+          .describe('Rows to return (default 50, max 500).'),
       }),
       outputSchema: filterDishesOutput,
       annotations: READ_ONLY_WORLD,
@@ -676,7 +675,6 @@ export function createServer(): McpServer {
             key: z.string(),
             label: z.string(),
             unit: z.string(),
-            sortable: z.boolean(),
           }),
         ),
         acceptedUnits: z.record(z.string(), z.array(z.string())),
@@ -686,7 +684,6 @@ export function createServer(): McpServer {
             name: z.string(),
             field: z.string(),
             publishedUnit: z.string(),
-            defaultUnit: z.string(),
             dailyValue: z.number(),
             dailyValueUnit: z.string(),
             derivedUnit: z.string(),
@@ -706,7 +703,6 @@ export function createServer(): McpServer {
             key: spec.key,
             label: spec.label,
             unit: spec.unit,
-            sortable: spec.sortable,
           })),
           acceptedUnits: accepted,
           sortFields: [...SORT_FIELDS],
@@ -714,7 +710,6 @@ export function createServer(): McpServer {
             name: spec.name,
             field: spec.field,
             publishedUnit: spec.publishedUnit,
-            defaultUnit: spec.derivedUnit,
             dailyValue: spec.dailyValue,
             dailyValueUnit: spec.dailyValueUnit,
             derivedUnit: spec.derivedUnit,
@@ -738,7 +733,8 @@ export function createServer(): McpServer {
         "Get the service periods published for a dining hall on the requested day, plus the regular " +
         "weekly schedule. today is the day's published service periods and regular is the weekly schedule. " +
         "A hall that cannot be read is reported in the failures and the other halls are still returned. " +
-        "The response carries the weekday name of the requested date.",
+        "The response carries the weekday name of the requested date. stale means a page was served from " +
+        "an expired cache entry; asOf is the age of the data.",
       inputSchema: z.strictObject({
         hall: hallIdSchema.optional().describe('One hall, or every hall.'),
         date: dateSchema.optional().describe('The day to read. Defaults to today.'),
@@ -748,9 +744,8 @@ export function createServer(): McpServer {
     },
     async (args) => {
       try {
-        const { date, weekday, hours, failures } = await getHours(args.hall, args.date);
-        const asOf = hours[0]?.asOf;
-        return ok({ date, weekday, hours, halls: hours, failures, asOf });
+        const { date, weekday, weekly, halls, failures, asOf } = await getHours(args.hall, args.date);
+        return ok({ date, weekday, weekly, halls, failures, asOf });
       } catch (error) {
         return fail(error);
       }
@@ -764,7 +759,9 @@ export function createServer(): McpServer {
       description:
         'The dining halls that are serving at the given time of day, and the ids of the ones that are not, ' +
         'with the service periods of the day for the halls that are open. Without arguments the current ' +
-        'campus-local time is used, and the response says which time it resolved.',
+        'campus-local time is used, and the response says which time it resolved. open carries the hall ' +
+        'details and today\'s periods; closed carries hall ids only. stale means a page was served from ' +
+        'an expired cache entry; asOf is the age of the data.',
       inputSchema: z.strictObject({
         date: dateSchema.optional().describe('The day to look at. Defaults to today.'),
         at: z
@@ -782,15 +779,12 @@ export function createServer(): McpServer {
         const slimOpen = open.map((loc) => ({
           id: loc.id,
           name: loc.name,
-          url: loc.url,
           residentsOnly: loc.residentsOnly,
           glutenFreePantry: loc.glutenFreePantry,
-          address: loc.address,
-          phone: loc.phone,
-          email: loc.email,
           today: loc.today,
           openNow: loc.openNow,
           stale: loc.stale,
+          asOf: loc.asOf,
         }));
         return ok({ date, at, open: slimOpen, closed, failures });
       } catch (error) {
@@ -804,10 +798,10 @@ export function createServer(): McpServer {
     {
       title: 'Get a dish nutrition panel',
       description:
-        "Get the full nutrition panel of one dish. The dish name is matched case-insensitively; an " +
-        "exact match wins, otherwise a unique substring match is used and an ambiguous name is " +
-        "reported rather than guessed. The panel values carry their unit; the micronutrient amount " +
-        "is the derived amount, with the published percent behind it. " + ALLERGEN_CAVEAT,
+        "Get the full nutrition panel of one dish. Name matched case-insensitively; exact match wins, " +
+        "else unique substring. Dish row uses the same coded layout as the sweep tools. Panel values are " +
+        "numbers with one units map; micronutrient amount is the derived amount, with the published percent " +
+        "behind it. asOf data age. Allergens advisory.",
       inputSchema: z.strictObject({
         hall: hallIdSchema.describe('The dining hall to read.'),
         item: z.string().min(1).describe('The dish name.'),

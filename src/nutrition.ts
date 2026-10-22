@@ -285,9 +285,7 @@ export const SORT_FIELDS: readonly string[] = [
   ...NUTRIENT_KEYS,
   'carbonFootprint',
   'proteinToCalorie',
-  'protein_to_calorie',
   'fiberToCalorie',
-  'fiber_to_calorie',
   ...MICRONUTRIENT_SPECS.map((spec) => spec.name),
 ];
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALLERGEN_NOTE, encodeResponse, selectNutrients, type DomainDish } from '../src/encode.js';
+import { ALLERGEN_NOTE, encodeResponse, rowFields, selectNutrients, type DomainDish } from '../src/encode.js';
 import { stationCode } from '../src/codes.js';
 
 function dish(overrides: Partial<DomainDish> = {}): DomainDish {
@@ -72,11 +72,13 @@ describe('the nutrient selection', () => {
 
 describe('the coded row', () => {
   it('is an array with the positions the response names', () => {
-    const response = encodeResponse([dish()], selectNutrients(undefined));
+    const selection = selectNutrients(undefined);
+    const response = encodeResponse([dish()], selection);
+    const fields = rowFields(selection, false, false);
     const row = response.matches[0]!;
 
     expect(Array.isArray(row)).toBe(true);
-    expect(response.fields).toEqual([
+    expect(fields).toEqual([
       'hall',
       'meal',
       'station',
@@ -88,45 +90,54 @@ describe('the coded row', () => {
       'servingSize',
       'servingSizeGrams',
     ]);
-    expect(row).toHaveLength(response.fields.length);
+    expect(row).toHaveLength(fields.length);
   });
 
   it('carries the codes of the hall, the meal and the station', () => {
-    const response = encodeResponse([dish()], selectNutrients(undefined));
+    const selection = selectNutrients(undefined);
+    const response = encodeResponse([dish()], selection);
+    const fields = rowFields(selection, false, false);
     const row = response.matches[0]!;
-    expect(at(row, 'hall', response.fields)).toBe(1);
-    expect(at(row, 'meal', response.fields)).toBe(3);
-    expect(at(row, 'station', response.fields)).toBe(stationCode('Grill'));
+    expect(at(row, 'hall', fields)).toBe(1);
+    expect(at(row, 'meal', fields)).toBe(3);
+    expect(at(row, 'station', fields)).toBe(stationCode('Grill'));
     expect(response.key.halls).toEqual({ '1': 'bursley' });
     expect(response.key.meals).toEqual({ '3': 'Lunch' });
     expect(response.key.stations).toEqual({ [String(stationCode('Grill'))]: 'Grill' });
   });
 
   it('carries the traits and the allergens as codes', () => {
-    const response = encodeResponse([dish()], selectNutrients(undefined));
+    const selection = selectNutrients(undefined);
+    const response = encodeResponse([dish()], selection);
+    const fields = rowFields(selection, false, false);
     const row = response.matches[0]!;
-    expect(at(row, 'traits', response.fields)).toEqual([5]);
-    expect(at(row, 'allergens', response.fields)).toEqual([7]);
+    expect(at(row, 'traits', fields)).toEqual([5]);
+    expect(at(row, 'allergens', fields)).toEqual([7]);
     expect(response.key.traits).toEqual({ '5': 'vegan' });
     expect(response.key.allergens).toEqual({ '7': 'milk' });
   });
 
   it('keeps the density in its own numeric field', () => {
-    const response = encodeResponse([dish()], selectNutrients(undefined));
+    const selection = selectNutrients(undefined);
+    const response = encodeResponse([dish()], selection);
+    const fields = rowFields(selection, false, false);
     const row = response.matches[0]!;
-    expect(at(row, 'mhealthyTier', response.fields)).toBe(3);
-    expect(response.fields).not.toContain('carbonFootprint');
+    expect(at(row, 'mhealthyTier', fields)).toBe(3);
+    expect(fields).not.toContain('carbonFootprint');
   });
 
   it('leaves the carbon tier out unless max carbon or a carbon sort asks for it', () => {
-    const defaultResponse = encodeResponse([dish()], selectNutrients(undefined));
-    expect(defaultResponse.fields).not.toContain('carbonFootprint');
+    const defaultSelection = selectNutrients(undefined);
+    const defaultFields = rowFields(defaultSelection, false, false);
+    expect(defaultFields).not.toContain('carbonFootprint');
 
+    const carbonSelection = selectNutrients(undefined, [], true);
     const carbonResponse = encodeResponse(
       [dish()],
-      selectNutrients(undefined, [], true),
+      carbonSelection,
     );
-    expect(carbonResponse.fields).toEqual([
+    const carbonFields = rowFields(carbonSelection, false, false);
+    expect(carbonFields).toEqual([
       'hall',
       'meal',
       'station',
@@ -140,70 +151,87 @@ describe('the coded row', () => {
       'servingSizeGrams',
     ]);
     const row = carbonResponse.matches[0]!;
-    expect(at(row, 'carbonFootprint', carbonResponse.fields)).toBe(2);
-    expect(at(row, 'mhealthyTier', carbonResponse.fields)).toBe(3);
-    expect(at(row, 'calories', carbonResponse.fields)).toBe(320);
+    expect(at(row, 'carbonFootprint', carbonFields)).toBe(2);
+    expect(at(row, 'mhealthyTier', carbonFields)).toBe(3);
+    expect(at(row, 'calories', carbonFields)).toBe(320);
   });
 
   it('carries the serving size and its weight in grams', () => {
-    const response = encodeResponse([dish()], selectNutrients(undefined));
+    const selection = selectNutrients(undefined);
+    const response = encodeResponse([dish()], selection);
+    const fields = rowFields(selection, false, false);
     const row = response.matches[0]!;
-    expect(at(row, 'servingSize', response.fields)).toBe('1 Each (113g)');
-    expect(at(row, 'servingSizeGrams', response.fields)).toBe(113);
+    expect(at(row, 'servingSize', fields)).toBe('1 Each (113g)');
+    expect(at(row, 'servingSizeGrams', fields)).toBe(113);
   });
 
   it('carries the days of a range query', () => {
+    const selection = selectNutrients(undefined);
     const response = encodeResponse(
       [dish({ dates: ['2026-10-21', '2026-10-22'] })],
-      selectNutrients(undefined),
+      selection,
     );
-    expect(response.fields).toContain('dates');
-    expect(at(response.matches[0]!, 'dates', response.fields)).toEqual([
+    const fields = rowFields(selection, true, false);
+    expect(fields).toContain('dates');
+    expect(at(response.matches[0]!, 'dates', fields)).toEqual([
       '2026-10-21',
       '2026-10-22',
     ]);
   });
 
   it('states the units of the nutrients it returns', () => {
-    const response = encodeResponse([dish()], selectNutrients(['protein']));
+    const selection = selectNutrients(['protein']);
+    const response = encodeResponse([dish()], selection);
     expect(response.units).toEqual({ calories: 'kcal', protein: 'g' });
   });
 
   it('returns a selected nutrient under its own name', () => {
-    const response = encodeResponse([dish()], selectNutrients(['protein']));
-    expect(response.fields).toContain('protein');
-    expect(at(response.matches[0]!, 'protein', response.fields)).toBe(32);
+    const selection = selectNutrients(['protein']);
+    const response = encodeResponse([dish()], selection);
+    const fields = rowFields(selection, false, false);
+    expect(fields).toContain('protein');
+    expect(at(response.matches[0]!, 'protein', fields)).toBe(32);
   });
 
   it('returns a selected micronutrient as the amount the panel derives from the percent', () => {
-    const response = encodeResponse([dish()], selectNutrients(['Iron']));
-    expect(response.fields).toContain('iron');
+    const selection = selectNutrients(['Iron']);
+    const response = encodeResponse([dish()], selection);
+    const fields = rowFields(selection, false, false);
+    expect(fields).toContain('iron');
     // The site publishes 15 %DV of an 18 mg Daily Value: 2.7 mg.
-    expect(at(response.matches[0]!, 'iron', response.fields)).toBe(2.7);
+    expect(at(response.matches[0]!, 'iron', fields)).toBe(2.7);
     expect(response.units!.iron).toBe('mg');
   });
 
   it('leaves the sodium out unless it is asked for', () => {
-    const without = encodeResponse([dish()], selectNutrients(undefined));
+    const withoutSelection = selectNutrients(undefined);
+    const without = encodeResponse([dish()], withoutSelection);
+    const withoutFields = rowFields(withoutSelection, false, false);
     expect(without.units).toBeUndefined();
-    expect(without.fields).not.toContain('sodium');
+    expect(withoutFields).not.toContain('sodium');
 
-    const with_ = encodeResponse([dish()], selectNutrients(['sodium']));
+    const selection3 = selectNutrients(['sodium']);
+    const with_ = encodeResponse([dish()], selection3);
+    const fields3 = rowFields(selection3, false, false);
     expect(with_.units).toEqual({ calories: 'kcal', sodium: 'mg' });
-    expect(at(with_.matches[0]!, 'sodium', with_.fields)).toBe(540);
+    expect(at(with_.matches[0]!, 'sodium', fields3)).toBe(540);
   });
 
   it('keeps the nutrient a filter constrained even when another one is asked for', () => {
-    const response = encodeResponse([dish()], selectNutrients(['protein'], ['sodium']));
+    const selection = selectNutrients(['protein'], ['sodium']);
+    const response = encodeResponse([dish()], selection);
+    const fields = rowFields(selection, false, false);
     expect(response.units).toEqual({ calories: 'kcal', sodium: 'mg', protein: 'g' });
-    expect(at(response.matches[0]!, 'sodium', response.fields)).toBe(540);
+    expect(at(response.matches[0]!, 'sodium', fields)).toBe(540);
   });
 
   it('reminds the reader of the allergen codes only when there are allergens', () => {
-    const withAllergens = encodeResponse([dish()], selectNutrients(undefined));
+    const selectionA = selectNutrients(undefined);
+    const withAllergens = encodeResponse([dish()], selectionA);
     expect(withAllergens.note).toBe(ALLERGEN_NOTE);
 
-    const without = encodeResponse([dish({ allergens: [] })], selectNutrients(undefined));
+    const selection2 = selectNutrients(undefined);
+    const without = encodeResponse([dish({ allergens: [] })], selection2);
     expect(without.note).toBeUndefined();
   });
 

@@ -457,7 +457,7 @@ function selectMeal(periods: ServicePeriod[], timeZone: string, now: Date): Meal
   const candidates: { period: ServicePeriod; range: { start: number; end: number }; meal: MealName }[] = [];
 
   for (const period of periods) {
-    if (period.closed) continue;
+    if (period.closed === true) continue;
     const range = parseTimeRange(period.times);
     if (!range) continue;
     const meal = MEAL_BY_LABEL[period.label.trim().toLowerCase()];
@@ -568,7 +568,7 @@ export function parseTimeOfDay(value: string): number {
  */
 export function isOpenAtMinutes(periods: ServicePeriod[], current: number): boolean {
   return periods.some((period) => {
-    if (period.closed) return false;
+    if (period.closed === true) return false;
     const range = parseTimeRange(period.times);
     if (!range) return false;
     return current >= range.start && current < range.end;
@@ -609,9 +609,12 @@ export async function listLocations(date?: string, at?: string, halls?: HallId[]
           mapUrl: page.location.mapUrl,
           meals: publishedMeals(page.menu, page.periods),
           date: requested,
-          today: page.periods,
+          today: page.periods.map((period) =>
+          period.closed === true ? period : { label: period.label, times: period.times },
+        ),
           openNow: isOpenAtMinutes(page.periods, atMinutes),
           stale: page.stale,
+          asOf: `${Math.max(0, Math.round((Date.now() - page.storedAt) / 60000))} minutes ago`,
         };
         return { hall, summary };
       } catch (error) {
@@ -714,9 +717,10 @@ export function menuGroups(page: HallPage): { meal: string; stations: { name: st
 export async function getHours(hallId?: HallId, date?: string): Promise<{
   date: string;
   weekday: string;
-  hours: HallHours[];
+  weekly: Record<string, { days: string[]; periods: ServicePeriod[]; closed?: boolean }[]>;
   halls: HallHours[];
   failures: { hall: HallId; hallName: string; error: string }[];
+  asOf?: string;
 }> {
   const today = todayIn();
   const requested = date ?? today;
@@ -724,6 +728,34 @@ export async function getHours(hallId?: HallId, date?: string): Promise<{
   const halls = hallId ? [getHallDefinition(hallId)] : HALLS;
   const [regular] = await Promise.all([loadRegularHours()]);
   const deadline = new Deadline();
+
+  // Dedup the weekly schedules: one block per distinct schedule, referenced
+  // by id from each hall.
+  const weekly: Record<string, { days: string[]; periods: ServicePeriod[]; closed?: boolean }[]> = {};
+  const weeklyIdByHall = new Map<HallId, string | null>();
+  const idByKey = new Map<string, string>();
+  for (const hall of halls) {
+    const raw = regular.get(hall.id)?.weekly ?? null;
+    if (!raw) {
+      weeklyIdByHall.set(hall.id, null);
+      continue;
+    }
+    const w = raw.map((entry) => ({
+      days: entry.days,
+      periods: entry.periods.map((period) =>
+        period.closed === true ? period : { label: period.label, times: period.times },
+      ),
+      ...(entry.closed === true ? { closed: true } : {}),
+    }));
+    const key = JSON.stringify(w);
+    let id = idByKey.get(key);
+    if (!id) {
+      id = `w${Object.keys(weekly).length + 1}`;
+      idByKey.set(key, id);
+      weekly[id] = w;
+    }
+    weeklyIdByHall.set(hall.id, id);
+  }
 
   // One hall that cannot be read does not lose the other nine.
   const settled = await Promise.allSettled(
@@ -736,19 +768,21 @@ export async function getHours(hallId?: HallId, date?: string): Promise<{
         name: hall.name,
         date: requested,
         weekday: weekdayName(requested),
-        today: page.periods,
-        regular: regular.get(hall.id) ? { weekly: regular.get(hall.id)!.weekly } : null,
+        today: page.periods.map((period) =>
+          period.closed === true ? period : { label: period.label, times: period.times },
+        ),
+        weekly: weeklyIdByHall.get(hall.id) ?? null,
         stale: page.stale,
         asOf: `${Math.max(0, Math.round((Date.now() - page.storedAt) / 60000))} minutes ago`,
       };
     }),
   );
 
-  const hours: HallHours[] = [];
+  const resultHalls: HallHours[] = [];
   const failures: { hall: HallId; hallName: string; error: string }[] = [];
   settled.forEach((entry, index) => {
     if (entry.status === 'fulfilled') {
-      hours.push(entry.value);
+      resultHalls.push(entry.value);
       return;
     }
     const hall = halls[index]!;
@@ -759,7 +793,8 @@ export async function getHours(hallId?: HallId, date?: string): Promise<{
     });
   });
 
-  return { date: requested, weekday: weekdayName(requested), hours, halls: hours, failures };
+  const asOf = resultHalls[0]?.asOf;
+  return { date: requested, weekday: weekdayName(requested), weekly, halls: resultHalls, failures, asOf };
 }
 
 /** The halls that are serving at the given time of day. */

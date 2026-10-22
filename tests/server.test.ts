@@ -196,11 +196,12 @@ describe('server', () => {
     expect(search.isError).toBeFalsy();
     const searchPayload = search.structuredContent as {
       totalMatches: number;
-      fields: string[];
       matches: unknown[][];
     };
     expect(searchPayload.totalMatches).toBeGreaterThan(0);
-    const name = searchPayload.fields.indexOf('name');
+    // Default sweep row layout (no carbon, no nutrients, single day):
+    // [hall, meal, station, name, traits, allergens, mhealthyTier, calories, servingSize, servingSizeGrams]
+    const name = 3;
     expect(String(searchPayload.matches[0]?.[name]).toLowerCase()).toContain('oatmeal');
 
     const filter = await client.callTool({
@@ -210,15 +211,14 @@ describe('server', () => {
     expect(filter.isError).toBeFalsy();
     const filterPayload = filter.structuredContent as {
       key: { allergens: Record<string, string>; traits: Record<string, string> };
-      fields: string[];
       note?: string;
       matches: unknown[][];
     };
     expect(filterPayload.matches.length).toBeGreaterThan(0);
     const milk = Object.entries(filterPayload.key.allergens).find(([, slug]) => slug === 'milk')?.[0];
     const vegetarian = Object.entries(filterPayload.key.traits).find(([, slug]) => slug === 'vegetarian')?.[0];
-    const allergens = filterPayload.fields.indexOf('allergens');
-    const traits = filterPayload.fields.indexOf('traits');
+    const allergens = 5;
+    const traits = 4;
     for (const match of filterPayload.matches) {
       if (milk) expect((match[allergens] as number[]).map(String)).not.toContain(milk);
       if (vegetarian) expect((match[traits] as number[]).map(String)).toContain(vegetarian);
@@ -235,10 +235,10 @@ describe('server', () => {
       arguments: { query: 'oatmeal' },
     });
     const plainPayload = plain.structuredContent as {
-      fields: string[];
       matches: unknown[][];
     };
-    expect(plainPayload.fields).not.toContain('carbonFootprint');
+    // No carbon in the row: default length 10.
+    expect(plainPayload.matches[0]).toHaveLength(10);
 
     // max_carbon brings the carbon tier into every row.
     const capped = await client.callTool({
@@ -247,13 +247,11 @@ describe('server', () => {
     });
     expect(capped.isError).toBeFalsy();
     const cappedPayload = capped.structuredContent as {
-      fields: string[];
       matches: unknown[][];
     };
-    const carbon = cappedPayload.fields.indexOf('carbonFootprint');
-    expect(carbon).toBeGreaterThanOrEqual(0);
-    const mhealthy = cappedPayload.fields.indexOf('mhealthyTier');
-    expect(carbon).toBe(mhealthy + 1);
+    // carbonFootprint sits right after mhealthyTier when max_carbon is set.
+    const carbon = 7;
+    expect(cappedPayload.matches[0]).toHaveLength(11);
     for (const row of cappedPayload.matches) {
       const value = row[carbon] as number | null;
       expect(value === null || value <= 2).toBe(true);
@@ -266,10 +264,9 @@ describe('server', () => {
     });
     expect(sorted.isError).toBeFalsy();
     const sortedPayload = sorted.structuredContent as {
-      fields: string[];
       matches: unknown[][];
     };
-    const sortedCarbon = sortedPayload.fields.indexOf('carbonFootprint');
+    const sortedCarbon = 7;
     expect(sortedCarbon).toBeGreaterThanOrEqual(0);
     const values = sortedPayload.matches.map(
       (row) => (row[sortedCarbon] as number | null) ?? Number.MAX_SAFE_INTEGER,
@@ -286,7 +283,7 @@ describe('server', () => {
       arguments: { query: 'oatmeal', hall: ['bursley'] },
     })) as {
       isError?: boolean;
-      structuredContent?: { key: { halls: Record<string, string> }; matches: unknown[][]; fields: string[] };
+      structuredContent?: { key: { halls: Record<string, string> }; matches: unknown[][] };
     };
     expect(one.isError).toBeFalsy();
     expect(Object.keys(one.structuredContent!.key.halls)).toEqual(['1']);
@@ -330,10 +327,10 @@ describe('server', () => {
     const hours = await client.callTool({ name: 'get_hours', arguments: { hall: 'bursley' } });
     expect(hours.isError).toBeFalsy();
     const hoursPayload = hours.structuredContent as {
-      halls: { today: { label: string }[]; regular: { weekly: unknown[] } | null }[];
+      halls: { today: { label: string }[]; weekly: string | null }[];
     };
     expect(hoursPayload.halls[0]?.today[0]?.label).toBe('Breakfast');
-    expect(hoursPayload.halls[0]?.regular?.weekly.length).toBeGreaterThan(0);
+    expect(hoursPayload.halls[0]?.weekly).toBeTruthy();
 
     const open = await client.callTool({ name: 'find_open_now', arguments: {} });
     expect(open.isError).toBeFalsy();
