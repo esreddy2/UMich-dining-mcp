@@ -132,10 +132,18 @@ export function createHttpApp(settings: HttpSettings = loadHttpSettings()) {
           sendJson(res, 405, { error: 'method_not_allowed' });
           return;
         }
-        const health = {
+        // When no bearer token is configured the endpoint is public: it says
+        // whether the server is up, and nothing about the cache or the
+        // upstream. When a token protects the tools, it protects the health
+        // endpoint too, and the payload names the cache size and the kind of
+        // the last upstream failure.
+        const health: Record<string, unknown> = {
           status: 'ok', uptimeSeconds: Math.floor((Date.now() - started) / 1000),
-          cacheSize: cache.size, lastUpstreamError: getLastUpstreamFailure(),
         };
+        if (settings.bearerTokenSha256) {
+          health.cacheSize = cache.size;
+          health.lastUpstreamError = getLastUpstreamFailure();
+        }
         if (method === 'HEAD') {
           res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
           res.end();
