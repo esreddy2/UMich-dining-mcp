@@ -299,7 +299,10 @@ async function requestText(url: string, options: FetchOptions): Promise<{ status
     };
   } catch (error) {
     if (error instanceof HttpError) throw error;
-    if (controller.signal.aborted && !options.signal?.aborted) {
+    // An abort is always a timeout: either this request's own deadline ran out
+    // or the caller aborted it (the call budget, a range cut-off, ...). A
+    // non-aborted failure is a network problem.
+    if (controller.signal.aborted || options.signal?.aborted) {
       throw new HttpError('timeout', `The request for ${upstreamName(url)} timed out after ${config.timeoutMs}ms`, url);
     }
     throw new HttpError('network', `The request for ${upstreamName(url)} failed: ${(error as Error).message}`, url);
