@@ -64,9 +64,9 @@ export type EncodedDish = unknown[];
 export interface EncodedResponse {
   key: Record<string, Record<string, string>>;
   units?: Record<string, string>;
-  note?: string;
   /** The names of the row positions, in the order the rows carry them. */
   fields: string[];
+  note?: string;
   [field: string]: unknown;
 }
 
