@@ -101,4 +101,32 @@ describe('http layer', () => {
 
     await expect(fetchText(URL_UNDER_TEST)).resolves.toContain('Bursley');
   });
+
+  it('classifies an external abort as a timeout, not a network failure', async () => {
+    const { fetchText } = await import('../src/http.js');
+    // A response that never arrives unless the signal is aborted.
+    vi.stubGlobal('fetch', async (_input: string | URL | Request, init?: RequestInit): Promise<Response> => {
+      return new Promise((resolve, reject) => {
+        init?.signal?.addEventListener(
+          'abort',
+          () => reject(new DOMException('aborted', 'AbortError')),
+          { once: true },
+        );
+      });
+    });
+
+    const controller = new AbortController();
+    const promise = fetchText(URL_UNDER_TEST, { signal: controller.signal });
+    controller.abort();
+
+    let error: unknown;
+    try {
+      await promise;
+    } catch (e) {
+      error = e;
+    }
+    expect(error).toBeDefined();
+    expect((error as { kind?: string }).kind).toBe('timeout');
+    expect((error as { message?: string }).message).toMatch(/timed out/);
+  });
 });
