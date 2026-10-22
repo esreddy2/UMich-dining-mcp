@@ -67,8 +67,6 @@ export interface DishSearchResult {
   /** Age of the data, as a human-readable string. */
   asOf: string;
   coverage?: Coverage;
-  /** The days whose page carried no menu. */
-  emptyDates?: string[];
   noMenu?: { hall: string; date: string }[];
   /** The meal labels the site used that this server cannot parse. */
   unknownMealLabels?: string[];
@@ -91,8 +89,6 @@ export interface DishFilterResult {
   /** Age of the data, as a human-readable string. */
   asOf: string;
   coverage?: Coverage;
-  /** The days whose page carried no menu. */
-  emptyDates?: string[];
   noMenu?: { hall: string; date: string }[];
   /** The meal labels the site used that this server cannot parse. */
   unknownMealLabels?: string[];
@@ -804,6 +800,7 @@ export async function findOpenNow(date?: string, at?: string): Promise<{
   open: LocationSummary[];
   closed: string[];
   failures: { hall: HallId; hallName: string; error: string }[];
+  asOf?: string;
 }> {
   const { date: day, locations, failures, resolvedAt } = await listLocations(date, at);
   return {
@@ -812,6 +809,7 @@ export async function findOpenNow(date?: string, at?: string): Promise<{
     open: locations.filter((summary) => summary.openNow),
     closed: locations.filter((summary) => !summary.openNow).map((s) => s.id),
     failures,
+    asOf: locations[0]?.asOf,
   };
 }
 
@@ -1186,12 +1184,15 @@ function sortMatches(
 /**
  * The note that says how to see the rows the limit cut off.
  */
-function truncatedNote(limit: number, total: number, sortBy?: string): string {
+function truncatedNote(limit: number, total: number, sortBy?: string, pending = 0, pages?: number): string {
   const order = sortBy ? ` in the order asked for (${sortBy})` : '';
-  return (
-    `The rows are cut short: showing the first ${limit} of ${total} matches${order}. ` +
-    'Ask again with a larger limit to see the rest.'
-  );
+  let note =
+    `The rows are cut short by the limit: showing the first ${limit} of ${total} matches${order}. ` +
+    'Ask again with a larger limit to see the rest.';
+  if (pending > 0) {
+    note += ` ${pending} of ${pages ?? '?'} pages of the range were not read (range budget); ask again with the next offset to continue.`;
+  }
+  return note;
 }
 
 /** Find dishes by name, in one hall or across all of them. */
@@ -1220,12 +1221,11 @@ export async function searchDishes(
     truncated: sweep.matches.length > limit,
     stale: sweep.stale,
     coverage: sweep.coverage,
-    emptyDates: sweep.noMenu.map((entry) => entry.date),
     noMenu: sweep.noMenu,
     asOf: sweep.asOf,
     unknownMealLabels: sweep.unknownMealLabels,
     stationNote: sweep.stationNote,
-    truncationNote: sweep.matches.length > limit ? truncatedNote(limit, sweep.matches.length, options.sort_by) : undefined,
+    truncationNote: sweep.matches.length > limit ? truncatedNote(limit, sweep.matches.length, options.sort_by, sweep.coverage?.pending ?? 0, sweep.coverage?.pages) : undefined,
   };
 }
 
@@ -1311,12 +1311,11 @@ export async function filterDishes(options: FilterOptions = {}): Promise<DishFil
     truncated: sweep.matches.length > limit,
     stale: sweep.stale,
     coverage: sweep.coverage,
-    emptyDates: sweep.noMenu.map((entry) => entry.date),
     noMenu: sweep.noMenu,
     asOf: sweep.asOf,
     unknownMealLabels: sweep.unknownMealLabels,
     stationNote: sweep.stationNote,
-    truncationNote: sweep.matches.length > limit ? truncatedNote(limit, sweep.matches.length, options.sort_by) : undefined,
+    truncationNote: sweep.matches.length > limit ? truncatedNote(limit, sweep.matches.length, options.sort_by, sweep.coverage?.pending ?? 0, sweep.coverage?.pages) : undefined,
     flags: {
       truncated: sweep.matches.length > limit,
       shown: Math.min(limit, sweep.matches.length),

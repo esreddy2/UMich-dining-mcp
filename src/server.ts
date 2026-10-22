@@ -177,7 +177,6 @@ const encodedMealSchema = z.object({
 
 const getMenuOutput = z.object({
   hall: hallIdSchema,
-  hallName: z.string(),
   date: z.string(),
   key: keySchema,
   units: z.record(z.string(), z.string()).optional(),
@@ -206,8 +205,6 @@ const filterDishesOutput = z.object({
   truncated: z.boolean(),
   /** True when a day of the answer was served from an expired cache entry. */
   stale: z.boolean(),
-  /** The days of the range whose page carried no menu. */
-  emptyDates: z.array(z.string()).optional(),
   noMenu: z.array(z.object({ hall: z.string(), date: z.string() })).optional(),
   asOf: z.string().optional(),
   filter: z.record(z.string(), z.unknown()).optional(),
@@ -256,6 +253,7 @@ const findOpenNowOutput = z.object({
   open: z.array(openHallSchema),
   closed: z.array(hallIdSchema),
   failures: z.array(failureSchema),
+  asOf: z.string().optional(),
 });
 
 const itemNutritionOutput = z.object({
@@ -329,7 +327,6 @@ function fail(error: unknown): { content: { type: 'text'; text: string }[]; isEr
  */
 function extraNotes(result: {
   noMenu?: { hall: string; date: string }[];
-  emptyDates?: string[];
   unknownMealLabels?: string[];
   stationNote?: string;
   dateRange?: { from: string; to: string };
@@ -362,8 +359,6 @@ function extraNotes(result: {
     for (const [date, halls] of byDate) {
       notes.push(`No menu published at: ${date} (${halls.join(', ')}).`);
     }
-  } else if (result.emptyDates && result.emptyDates.length > 0) {
-    notes.push(`No menu published on: ${result.emptyDates.join(', ')}.`);
   }
   if (result.coverage && (result.coverage.pending ?? 0) > 0) {
     notes.push(
@@ -511,7 +506,6 @@ export function createServer(): McpServer {
         }
         return ok(encodeMenu(groups, selection, {
           hall: page.hall.id,
-          hallName: page.hall.name,
           date: page.date,
           unknownMealLabels: page.menu.unknownMealLabels,
           ...(page.menu.renderedDate ? { renderedDate: page.menu.renderedDate } : {}),
@@ -644,7 +638,6 @@ export function createServer(): McpServer {
           totalMatches: result.totalMatches,
           truncated: result.truncated,
           stale: result.stale,
-          emptyDates: result.emptyDates ?? [],
           noMenu: result.noMenu ?? [],
           asOf: result.asOf,
           failures: result.failures,
@@ -652,7 +645,7 @@ export function createServer(): McpServer {
           filter: result.filter,
           flags: result.flags,
           nutrients: [...selection.keys, ...selection.micronutrients.map((m) => m.field)],
-        }, extraNotes(result)));
+        }, extraNotes(result), (result.filter?.sortBy as string | undefined) ?? args.sort_by));
       } catch (error) {
         return fail(error);
       }
@@ -695,7 +688,10 @@ export function createServer(): McpServer {
     },
     () => {
       const accepted: Record<string, string[]> = {};
-      for (const spec of NUTRIENT_SPECS) accepted[spec.key] = acceptedUnits(spec.key);
+      for (const spec of NUTRIENT_SPECS) {
+        if (spec.key === 'calories') continue;
+        accepted[spec.key] = acceptedUnits(spec.key);
+      }
       for (const spec of MICRONUTRIENT_SPECS) accepted[spec.name] = acceptedUnits(spec.name);
 
         return ok({
@@ -775,7 +771,7 @@ export function createServer(): McpServer {
     },
     async (args) => {
       try {
-        const { date, at, open, closed, failures } = await findOpenNow(args.date, args.at);
+        const { date, at, open, closed, failures, asOf } = await findOpenNow(args.date, args.at);
         const slimOpen = open.map((loc) => ({
           id: loc.id,
           name: loc.name,
@@ -786,7 +782,7 @@ export function createServer(): McpServer {
           stale: loc.stale,
           asOf: loc.asOf,
         }));
-        return ok({ date, at, open: slimOpen, closed, failures });
+        return ok({ date, at, open: slimOpen, closed, failures, asOf });
       } catch (error) {
         return fail(error);
       }

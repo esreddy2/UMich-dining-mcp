@@ -13,9 +13,11 @@ import {
   NUTRIENT_SPECS,
   micronutrientAmount,
   micronutrientSpec,
+  NUTRIENT_KEYS,
   parseNutritionNumber,
   parseServingSizeGrams,
   resolveNutrientName,
+  resolveSortField,
   type MicronutrientSpec,
 } from './nutrition.js';
 import type { CarbonLevel, HallId, Nutrition } from './types.js';
@@ -179,7 +181,26 @@ export function selectionUnits(selection: NutrientSelection): Record<string, str
  * The list is the same for every row of a response, and the response names
  * it once.
  */
-export function rowFields(selection: NutrientSelection, withDates = false, hoist = false): string[] {
+function canonicalSortField(sortBy: string): string {
+  try {
+    return resolveSortField(sortBy);
+  } catch {
+    return sortBy;
+  }
+}
+
+function sortFieldAlreadyInRow(canonical: string, selection: NutrientSelection): boolean {
+  if (canonical === 'calories') return true;
+  if (canonical === 'carbonFootprint') return selection.includeCarbon;
+  if (canonical === 'proteinToCalorie' || canonical === 'protein_to_calorie') return false;
+  if (canonical === 'fiberToCalorie' || canonical === 'fiber_to_calorie') return false;
+  if (NUTRIENT_KEYS.includes(canonical)) return selection.keys.includes(canonical);
+  // micronutrient: canonical is its published name (e.g. "Iron")
+  if (selection.micronutrients.some((spec) => spec.name === canonical)) return true;
+  return false;
+}
+
+export function rowFields(selection: NutrientSelection, withDates = false, hoist = false, sortBy?: string): string[] {
   const fields: string[] = [];
   if (!hoist) fields.push('hall', 'meal', 'station');
   fields.push('name', 'traits', 'allergens', 'mhealthyTier');
@@ -188,7 +209,37 @@ export function rowFields(selection: NutrientSelection, withDates = false, hoist
   if (withDates) fields.push('dates');
   for (const key of selection.keys) fields.push(key);
   for (const spec of selection.micronutrients) fields.push(spec.field);
+  if (sortBy) {
+    const canonical = canonicalSortField(sortBy);
+    if (!sortFieldAlreadyInRow(canonical, selection)) {
+      fields.push(canonical);
+    }
+  }
   return fields;
+}
+
+
+
+function sortFieldValue(dish: DomainDish, sortBy: string): number | null {
+  const canonical = sortBy;
+  if (canonical === 'calories') return dish.calories;
+  if (canonical === 'carbonFootprint') return dish.carbonFootprint;
+  if (canonical === 'sodium') return dish.sodiumMg;
+  if (canonical === 'proteinToCalorie' || canonical === 'protein_to_calorie') {
+    const p = parseNutritionNumber(dish.nutrition?.protein ?? null, 'protein');
+    if (p === null || !dish.calories) return null;
+    return p / dish.calories;
+  }
+  if (canonical === 'fiberToCalorie' || canonical === 'fiber_to_calorie') {
+    const f = parseNutritionNumber(dish.nutrition?.dietaryFiber ?? null, 'dietaryFiber');
+    if (f === null || !dish.calories) return null;
+    return f / dish.calories;
+  }
+  const micro = micronutrientSpec(canonical);
+  if (micro) return micronutrientAmount(dish.nutrition, micro);
+  const raw = dish.nutrition ? (dish.nutrition as unknown as Record<string, unknown>)[canonical] : null;
+  const rawStr = typeof raw === 'string' ? raw : (raw == null ? null : (typeof raw === 'number' ? String(raw) : null));
+  return parseNutritionNumber(rawStr, canonical);
 }
 
 export function encodeDish(
@@ -196,6 +247,7 @@ export function encodeDish(
   builder: KeyBuilder,
   selection: NutrientSelection,
   hoist = false,
+  sortBy?: string,
 ): EncodedDish {
   const hall = HALL_CODES[dish.hall] ?? 0;
   const meal = mealCode(builder, dish.meal);
@@ -241,6 +293,13 @@ export function encodeDish(
     encoded.push(micronutrientAmount(dish.nutrition, spec));
   }
 
+  if (sortBy) {
+    const canonical = canonicalSortField(sortBy);
+    if (!sortFieldAlreadyInRow(canonical, selection)) {
+      encoded.push(sortFieldValue(dish, canonical));
+    }
+  }
+
   return encoded;
 }
 
@@ -256,14 +315,17 @@ export function encodeResponse(
   selection: NutrientSelection,
   rest: Record<string, unknown> = {},
   extraNotes: string[] = [],
+  sortBy?: string,
 ): EncodedSweepResponse {
+  const { sortBy: restSortBy, ...cleanRest } = rest;
+  const resolvedSortBy = sortBy ?? (typeof restSortBy === 'string' ? restSortBy : undefined);
   const builder = createKeyBuilder();
-  const matches = dishes.map((dish) => encodeDish(dish, builder, selection));
+  const matches = dishes.map((dish) => encodeDish(dish, builder, selection, false, resolvedSortBy));
 
   const response: EncodedSweepResponse = {
     key: buildKey(builder),
     units: { ...selection.units },
-    ...rest,
+    ...cleanRest,
     matches,
   };
 
