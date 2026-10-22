@@ -133,12 +133,12 @@ what that response uses. The codes are frozen for the life of the contract.
            "allergens": { "7": "milk" } },
   "units": { "calories": "kcal", "protein": "g" },
   "fields": ["hall", "meal", "station", "name", "traits", "allergens",
-             "mhealthyTier", "carbonFootprint", "calories", "servingSize",
+             "mhealthyTier", "calories", "servingSize",
              "servingSizeGrams", "protein"],
   "note": "Allergen codes: check key.allergens before reporting; site data is advisory.",
   "date": "2026-10-21",
   "matches": [
-    [1, 3, 7, "Grilled Chicken", [5], [7], 3, 2, 320, "1 Each (113g)", 113, 32]
+    [1, 3, 7, "Grilled Chicken", [5], [7], 3, 320, "1 Each (113g)", 113, 32]
   ]
 }
 ```
@@ -152,11 +152,10 @@ repeated on every row of the answer: a named row cost 216 bytes, an array row co
   are 1..6 (glutenfree, halal, kosher, spicy, vegan, vegetarian). A meal label the site
   invents takes the next free code, from 5. The stations have a frozen vocabulary too: the
   same station carries the same code in every response, so a code can be remembered.
-- `mhealthyTier` is 1 (Nutrient Dense Low) to 5 (Nutrient Dense High) and
-  `carbonFootprint` is 1 (low), 2 (medium) or 3 (high). The two scales are fixed and are
-  described in the tool descriptions and in `umich://taxonomy`.
-- The `traits` array carries the six boolean traits only; the density and the carbon tier
-  are lifted into their own numeric fields.
+- `mhealthyTier` is 1 (Nutrient Dense Low) to 5 (Nutrient Dense High). The scale is fixed
+  and described in the tool descriptions and in `umich://taxonomy`.
+- The `traits` array carries the six boolean traits only; the density tier is lifted into
+  its own numeric field.
 - The `units` map gives the unit of every nutrient the response returns. A micronutrient
   is an amount like every other nutrient: the site publishes the percent of the Daily
   Value, and the row carries the amount that percent stands for — 15 %DV of an 18 mg

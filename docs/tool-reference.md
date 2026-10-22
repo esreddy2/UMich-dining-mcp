@@ -28,13 +28,13 @@ the contract.
            "allergens": { "7": "milk" } },
   "units": { "calories": "kcal", "protein": "g" },
   "fields": ["hall", "meal", "station", "name", "traits", "allergens",
-             "mhealthyTier", "carbonFootprint", "calories", "servingSize",
+             "mhealthyTier", "calories", "servingSize",
              "servingSizeGrams", "protein"],
   "note": "Allergen codes: check key.allergens before reporting; site data is advisory.",
   "date": "2026-10-21",
   "totalMatches": 1,
   "matches": [
-    [1, 3, 7, "Grilled Chicken", [5], [7], 3, 2, 320, "1 Each (113g)", 113, 32]
+    [1, 3, 7, "Grilled Chicken", [5], [7], 3, 320, "1 Each (113g)", 113, 32]
   ],
   "failures": []
 }
@@ -54,7 +54,6 @@ every row: a named row cost 216 bytes, an array row costs 72.
 | Boolean traits | 1..6 | glutenfree, halal, kosher, spicy, vegan, vegetarian. |
 | Stations | 1..n | A frozen vocabulary, the same in every response: the same station always carries the same number. A name the site invents takes the next free number. |
 | `mhealthyTier` | 1..5 | 1 = Nutrient Dense Low … 5 = Nutrient Dense High. |
-| `carbonFootprint` | 1..3 | 1 = low, 2 = medium, 3 = high. |
 
 `umich://taxonomy` publishes the code, the slug and the label of every allergen and trait;
 `umich://dining-halls` publishes the code of every hall.
@@ -63,13 +62,12 @@ every row: a named row cost 216 bytes, an array row costs 72.
 
 - The `key` block lists only what the response uses. A response with no allergens has no
   `key.allergens`.
-- The `traits` array carries the six boolean traits only. The density and the carbon tier
-  are lifted into `mhealthyTier` and `carbonFootprint`, because those two numbers are the
-  vocabulary the filters speak.
+- The `traits` array carries the six boolean traits only. The density tier
+  is lifted into `mhealthyTier`, because that is the number the filters speak.
 - The `units` map gives the unit of every nutrient the response returns.
 - The `fields` list names the positions of a row, in order. A row always carries the
   hall, the meal, the station, the name, the traits, the allergens, the density tier,
-  the carbon tier, the calories, the serving size and the serving size in grams. Every
+  the calories, the serving size and the serving size in grams. Every
   other nutrient, the sodium included, is asked for by name with `include_nutrients`,
   and a nutrient a filter constrained is always returned.
 - A dish without a published value is `null`, never `0`.

@@ -84,7 +84,6 @@ describe('the coded row', () => {
       'traits',
       'allergens',
       'mhealthyTier',
-      'carbonFootprint',
       'calories',
       'servingSize',
       'servingSizeGrams',
@@ -112,11 +111,11 @@ describe('the coded row', () => {
     expect(response.key.allergens).toEqual({ '7': 'milk' });
   });
 
-  it('keeps the density and the carbon tiers in their own numeric fields', () => {
+  it('keeps the density in its own numeric field', () => {
     const response = encodeResponse([dish()], selectNutrients(undefined));
     const row = response.matches[0]!;
     expect(at(row, 'mhealthyTier', response.fields)).toBe(3);
-    expect(at(row, 'carbonFootprint', response.fields)).toBe(2);
+    expect(response.fields).not.toContain('carbonFootprint');
   });
 
   it('carries the serving size and its weight in grams', () => {
