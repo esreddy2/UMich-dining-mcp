@@ -1,6 +1,6 @@
 # The tool reference
 
-Nine tools and two resources. Every tool is read-only and reaches the dining site of the
+Eight tools and two resources. Every tool is read-only and reaches the dining site of the
 University of Michigan.
 
 ## The tools at a glance
@@ -9,7 +9,6 @@ University of Michigan.
 |---|---|
 | `list_locations` | The ten halls, their contact details and their service periods. |
 | `get_menu` | The whole menu of one hall, with the nutrition panels. |
-| `search_dishes` | Find dishes by name. |
 | `filter_dishes` | Filter the menus by allergen, trait and nutrients. |
 | `list_nutrition_fields` | The nutrient names, their units and the Daily Value basis. |
 | `get_hours` | The service periods of a day and the regular weekly schedule. |
@@ -18,7 +17,7 @@ University of Michigan.
 
 ## The response contract
 
-`search_dishes` and `filter_dishes` return coded rows. The codes are frozen for the life of
+`filter_dishes` returns coded rows. The codes are frozen for the life of
 the contract.
 
 ```json
@@ -106,28 +105,6 @@ together. The panel of a single dish comes from `get_item_nutrition`.
 | `meal` | meal name or list | Keeps only those meals, in the order of the day. When it is left out, the meal the hall is serving right now is used. |
 | `station` | string | Keeps only that station. |
 | `include_nutrients` | string[] | The nutrients to return, or `["all"]`. |
-
-## search_dishes
-
-A case-insensitive substring match on the dish name.
-
-| Parameter | Type | Meaning |
-|---|---|---|
-| `query` | string | The text to look for. Required. |
-| `hall` | hall id, or hall id[] | The halls to search: one hall, or a list of them. Left out, or an empty list, searches every hall. |
-| `date` | `YYYY-MM-DD` | A single day. Cannot be combined with `from`/`to`. |
-| `from` | `YYYY-MM-DD` | The first day of a range. |
-| `to` | `YYYY-MM-DD` | The last day of a range. Defaults to the last published day. |
-| `offset` | number | How many pages of the range to skip. The `coverage` block names the offset of the next page. |
-| `meal` | meal name | Narrows the search to one meal. |
-| `station` | string | Narrows the search to one station. |
-| `sort_by` | string | A nutrient key, a micronutrient name, `proteinToCalorie` or `fiberToCalorie`. An unknown field is refused. |
-| `sort_order` | `asc`, `desc` | The direction. It defaults to `desc`. |
-| `limit` | 1..500 | How many rows to return, the first of them in the order asked for. Defaults to 50; ask again with a larger limit for more. |
-
-```json
-{ "name": "search_dishes", "arguments": { "query": "tiramisu", "from": "2026-10-24" } }
-```
 
 ## filter_dishes
 
