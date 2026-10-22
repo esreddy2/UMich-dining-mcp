@@ -79,7 +79,7 @@ describe('a range query', () => {
   it('reports a day whose page carried no menu', async () => {
     mockDatedFetch({ [day(0)]: BURSLEY, [day(1)]: BURSLEY });
     const result = await searchDishes('oatmeal', { halls: ['bursley'], from: day(0), to: day(1) });
-    expect(result.emptyDates).toEqual([]);
+    expect(result.noMenu).toEqual([]);
   });
 
   it('filters a range and keeps the days that satisfy the constraint', async () => {

@@ -131,10 +131,10 @@ describe('the notes of a sweep answer', () => {
     const result = (await client.callTool({
       name: 'filter_dishes',
       arguments: { hall: 'bursley', date: '2026-10-24' },
-    })) as { structuredContent?: { emptyDates?: string[]; note?: string; totalMatches: number } };
+    })) as { structuredContent?: { noMenu?: { hall: string; date: string }[]; note?: string; totalMatches: number } };
 
     const payload = result.structuredContent!;
-    expect(payload.emptyDates).toEqual(['2026-10-24']);
+    expect(payload.noMenu).toEqual([{ hall: 'bursley', date: '2026-10-24' }]);
     expect(payload.totalMatches).toBe(0);
     expect(payload.note).toMatch(/No menu published at: 2026-10-24/);
   });
@@ -144,11 +144,11 @@ describe('the notes of a sweep answer', () => {
     const result = (await client.callTool({
       name: 'filter_dishes',
       arguments: { hall: 'bursley', station: 'No Such Station' },
-    })) as { structuredContent?: { emptyDates?: string[]; note?: string } };
+    })) as { structuredContent?: { noMenu?: { hall: string; date: string }[]; note?: string } };
 
     const payload = result.structuredContent!;
     // The day had a menu; the station simply does not exist.
-    expect(payload.emptyDates).toEqual([]);
+    expect(payload.noMenu).toEqual([]);
     expect(payload.note).toMatch(/No station called/);
     expect(payload.note).not.toMatch(/No menu published/);
   });

@@ -31,20 +31,19 @@ export interface NutrientSpec {
   key: string;
   label: string;
   unit: NutrientUnit;
-  sortable: boolean;
 }
 
 export const NUTRIENT_SPECS: NutrientSpec[] = [
-  { key: 'calories', label: 'Calories', unit: 'kcal', sortable: true },
-  { key: 'totalFat', label: 'Total Fat', unit: 'g', sortable: true },
-  { key: 'saturatedFat', label: 'Saturated Fat', unit: 'g', sortable: true },
-  { key: 'transFat', label: 'Trans Fat', unit: 'g', sortable: true },
-  { key: 'cholesterol', label: 'Cholesterol', unit: 'mg', sortable: true },
-  { key: 'sodium', label: 'Sodium', unit: 'mg', sortable: true },
-  { key: 'totalCarbohydrate', label: 'Total Carbohydrate', unit: 'g', sortable: true },
-  { key: 'dietaryFiber', label: 'Dietary Fiber', unit: 'g', sortable: true },
-  { key: 'sugars', label: 'Sugars', unit: 'g', sortable: true },
-  { key: 'protein', label: 'Protein', unit: 'g', sortable: true },
+  { key: 'calories', label: 'Calories', unit: 'kcal' },
+  { key: 'totalFat', label: 'Total Fat', unit: 'g' },
+  { key: 'saturatedFat', label: 'Saturated Fat', unit: 'g' },
+  { key: 'transFat', label: 'Trans Fat', unit: 'g' },
+  { key: 'cholesterol', label: 'Cholesterol', unit: 'mg' },
+  { key: 'sodium', label: 'Sodium', unit: 'mg' },
+  { key: 'totalCarbohydrate', label: 'Total Carbohydrate', unit: 'g' },
+  { key: 'dietaryFiber', label: 'Dietary Fiber', unit: 'g' },
+  { key: 'sugars', label: 'Sugars', unit: 'g' },
+  { key: 'protein', label: 'Protein', unit: 'g' },
 ];
 
 export const NUTRIENT_KEYS = NUTRIENT_SPECS.map((s) => s.key);

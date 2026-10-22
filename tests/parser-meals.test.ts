@@ -146,6 +146,6 @@ describe('a meal the sweep has to reach', () => {
     const result = await filterDishes({ halls: ['bursley'], date: '2026-10-25' });
     expect(result.failures).toHaveLength(0);
     expect(result.totalMatches).toBe(0);
-    expect(result.emptyDates).toEqual(['2026-10-25']);
+    expect(result.noMenu).toEqual([{ hall: 'bursley', date: '2026-10-25' }]);
   });
 });
