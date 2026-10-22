@@ -13,11 +13,17 @@ export const HALL_IDS = [
 
 export type HallId = (typeof HALL_IDS)[number];
 
-export type MealName = 'Breakfast' | 'Lunch' | 'Dinner';
+/**
+ * The meals the site publishes.
+ *
+ * Brunch is the fourth one: the site publishes it on the weekend days, where
+ * it is often the only meal of the afternoon.
+ */
+export type MealName = 'Breakfast' | 'Brunch' | 'Lunch' | 'Dinner';
 
-export const MEAL_NAMES: readonly MealName[] = ['Breakfast', 'Lunch', 'Dinner'];
+export const MEAL_NAMES: readonly MealName[] = ['Breakfast', 'Brunch', 'Lunch', 'Dinner'];
 
-export type CarbonLevel = 'low' | 'medium' | 'high';
+export type CarbonLevel = 1 | 2 | 3;
 
 export interface DiningHall {
   id: HallId;
@@ -33,7 +39,7 @@ export interface DiningHall {
   email: string | null;
   mapUrl: string | null;
   /** Meals published for the requested day, as published by the site. */
-  meals: MealName[];
+  meals: string[];
 }
 
 export interface Nutrition {
@@ -70,12 +76,25 @@ export interface Station {
   items: MenuItem[];
 }
 
+/** A meal the site published that this server has no slot for. */
+export interface OtherMeal {
+  /** The site's own label, e.g. "Supper". */
+  label: string;
+  stations: Station[];
+}
+
 export interface Menu {
   hall: HallId;
   date: string;
   meals: Record<MealName, Station[]>;
   /** The site's own meal labels, verbatim (they may differ from MealName). */
   mealLabels: Partial<Record<MealName, string>>;
+  /** Meals the site published that this server has no slot for. */
+  otherMeals: OtherMeal[];
+  /** Meal labels the site used that this server does not know. */
+  unknownMealLabels: string[];
+  /** True when the site published its "no menu" marker for this day. */
+  noMenu: boolean;
   /** Date the page actually rendered, when the page exposes it. */
   renderedDate: string | null;
   /** True when the payload came from a stale cache entry. */

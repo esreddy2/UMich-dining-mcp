@@ -1,17 +1,19 @@
 /** Text helpers shared by the parsers. */
 
-const DASHES = /[‐‑‒–—―]/g;
+/** The non-breaking space and the dashes the site uses between times. */
+const REPLACEMENTS = /[\u00a0\u2010-\u2015\u2032\u2033]/g;
 
 /**
  * Normalise the site's markup into plain text: the pages are full of
  * `&nbsp;` (U+00A0) and `&#8209;` (U+2011, non-breaking hyphen) and the
  * regular hours page uses an en dash between times.
+ *
+ * The character replacements run in one pass over the text.
  */
 export function normalizeText(value: string | null | undefined): string {
   if (!value) return '';
   return value
-    .replace(/\u00a0/g, ' ')
-    .replace(DASHES, '-')
+    .replace(REPLACEMENTS, (match) => (match === '\u00a0' ? ' ' : '-'))
     .replace(/\s+/g, ' ')
     .trim();
 }

@@ -13,7 +13,7 @@ import {
   todayIn,
   validateDate,
 } from '../src/service.js';
-import { HALL_FIXTURES, readExpected, readFixture, mockFixtureFetch } from './helpers.js';
+import { HALL_FIXTURES, fixtureResponse, readExpected, mockFixtureFetch } from './helpers.js';
 
 /**
  * The service layer, checked against the data of the site.
@@ -32,16 +32,16 @@ interface ExpectedDish {
   traits: string[];
   allergens: string[];
   mhealthyTier: number | null;
-  carbon: 'low' | 'medium' | 'high' | null;
+  carbon: 1 | 2 | 3 | null;
   calories: number | null;
   sodiumMg: number | null;
 }
 
 const MHEALTHY_TIERS = ['mhealthy1', 'mhealthy2', 'mhealthy3', 'mhealthy4', 'mhealthy5'];
-const CARBON_TIERS: Record<string, 'low' | 'medium' | 'high'> = {
-  carbonlow: 'low',
-  carbonmedium: 'medium',
-  carbonhigh: 'high',
+const CARBON_TIERS: Record<string, 1 | 2 | 3> = {
+  carbonlow: 1,
+  carbonmedium: 2,
+  carbonhigh: 3,
 };
 
 /** Every dish of the site, rebuilt from the expected data. */
@@ -184,8 +184,8 @@ describe('the menus of the halls', () => {
     vi.stubGlobal('fetch', async (input: string | URL | Request): Promise<Response> => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
       if (url.includes('markley')) throw new Error('the hall is down');
-      const name = `${new URL(url).pathname.replace(/\/+$/, '').split('/').pop()}.html`;
-      return new Response(readFixture(name), { status: 200 });
+      const response = fixtureResponse(url);
+      return response ?? new Response('not found', { status: 404 });
     });
 
     const { locations, failures } = await listLocations();
@@ -201,9 +201,10 @@ describe('the menus of the halls', () => {
   });
 
   it('reports the service periods of every hall', async () => {
-    const halls = await getHours();
-    expect(halls).toHaveLength(10);
-    for (const hall of halls) {
+    const { hours, failures } = await getHours();
+    expect(failures).toEqual([]);
+    expect(hours).toHaveLength(10);
+    for (const hall of hours) {
       const expected = readExpected(hall.hall);
       expect(hall.today.map((period) => period.label), hall.hall).toEqual(
         expected.todayHours.map((period) => period.label),
@@ -247,7 +248,7 @@ describe('the search for dishes', () => {
 
   it('finds a dish in one hall only', async () => {
     const all = await searchDishes('oatmeal');
-    const one = await searchDishes('oatmeal', { hall: 'bursley' });
+    const one = await searchDishes('oatmeal', { halls: ['bursley'] });
     expect(one.totalMatches).toBeLessThan(all.totalMatches);
     for (const match of one.matches) expect(match.hall).toBe('bursley');
   });
@@ -310,14 +311,14 @@ describe('the filters of the dishes', () => {
   });
 
   it('reads the carbon footprint as a maximum and leaves out the dishes without one', async () => {
-    const result = await filterDishes({ max_carbon: 'medium' });
-    const rank = { low: 1, medium: 2, high: 3 };
+    const result = await filterDishes({ max_carbon: 2 });
+    const rank = { 1: 1, 2: 2, 3: 3 };
     const expected = ALL_DISHES.filter(
-      (dish) => dish.carbon !== null && rank[dish.carbon] <= rank.medium,
+      (dish) => dish.carbon !== null && rank[dish.carbon] <= 2,
     ).sort(byHallMealName);
     expect(result.totalMatches).toBe(expected.length);
     for (const match of result.matches) {
-      expect(['low', 'medium']).toContain(match.carbonFootprint);
+      expect([1, 2]).toContain(match.carbonFootprint);
     }
   });
 
@@ -352,10 +353,9 @@ describe('the filters of the dishes', () => {
     expect(limited.totalMatches).toBe(all.totalMatches);
   });
 
-  it('carries the allergen warning with every result', async () => {
+  it('does not repeat the long allergen caveat in the body', async () => {
     const result = await filterDishes({});
-    expect(result.warning).toMatch(/allergen/i);
-    expect(result.warning).toMatch(/coeliac/i);
+    expect(result).not.toHaveProperty('warning');
   });
 });
 
