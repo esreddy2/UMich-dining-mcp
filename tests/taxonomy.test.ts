@@ -113,9 +113,9 @@ describe('taxonomy', () => {
     expect(mhealthyTier(['mhealthy1'])).toBe(1);
     expect(mhealthyTier(['mhealthy5'])).toBe(5);
     expect(mhealthyTier(['vegan'])).toBeNull();
-    expect(carbonFootprint(['carbonlow'])).toBe('low');
-    expect(carbonFootprint(['carbonmedium'])).toBe('medium');
-    expect(carbonFootprint(['carbonhigh'])).toBe('high');
+    expect(carbonFootprint(['carbonlow'])).toBe(1);
+    expect(carbonFootprint(['carbonmedium'])).toBe(2);
+    expect(carbonFootprint(['carbonhigh'])).toBe(3);
     expect(carbonFootprint(['vegan'])).toBeNull();
   });
 

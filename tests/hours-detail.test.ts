@@ -77,13 +77,13 @@ describe('the regular hours', () => {
   const expected = readExpectedRegularHours();
 
   it('finds the halls of the dining halls and of the select access', () => {
-    expect([...regular.keys()].sort()).toEqual([...HALLS].sort());
+    expect(Object.keys(regular).sort()).toEqual([...HALLS].sort());
     expect(Object.keys(expected).sort()).toEqual([...HALLS].sort());
   });
 
   it('names every hall and links to its menu page', () => {
     for (const [hall, info] of Object.entries(expected)) {
-      const parsed = regular.get(hall as never);
+      const parsed = regular[hall as keyof typeof regular];
       expect(parsed?.name, hall).toBe(info.name);
       expect(parsed?.url, hall).toBe(info.url);
     }
@@ -91,7 +91,7 @@ describe('the regular hours', () => {
 
   it('reads the days and the periods of every week', () => {
     for (const [hall, info] of Object.entries(expected)) {
-      const parsed = regular.get(hall as never);
+      const parsed = regular[hall as keyof typeof regular];
       expect(parsed?.weekly, hall).toHaveLength(info.weekly.length);
       info.weekly.forEach((entry: ExpectedRegularHours['weekly'][number], index: number) => {
         const week = parsed?.weekly[index];
@@ -129,7 +129,7 @@ describe('the regular hours', () => {
   });
 
   it('marks a day without service as closed', () => {
-    const lawyers = regular.get('lawyers-club');
+    const lawyers = regular['lawyers-club'];
     const saturday = lawyers?.weekly.find((entry) => entry.days.includes('Saturday'));
     expect(saturday?.closed).toBe(true);
     expect(saturday?.periods.every((period) => period.closed)).toBe(true);
@@ -172,8 +172,8 @@ describe('the regular hours of a hand written page', () => {
 
   it('finds a hall by the link of its heading and not by its position', () => {
     const regular = parseRegularHours(page);
-    expect([...regular.keys()].sort()).toEqual(['bursley', 'markley']);
-    expect(regular.get('bursley')?.weekly[0]?.days).toEqual([
+    expect(Object.keys(regular).sort()).toEqual(['bursley', 'markley']);
+    expect(regular['bursley']?.weekly[0]?.days).toEqual([
       'Monday',
       'Tuesday',
       'Wednesday',
@@ -184,10 +184,10 @@ describe('the regular hours of a hand written page', () => {
   it('keeps a time without a label as a time', () => {
     const regular = parseRegularHours(page);
     // A labelled line is cut at its colon.
-    expect(regular.get('bursley')?.weekly[0]?.periods[0]?.label).toBe('Breakfast');
-    expect(regular.get('bursley')?.weekly[0]?.periods[0]?.times).toBe('7:00 am - 10:30 am');
+    expect(regular['bursley']?.weekly[0]?.periods[0]?.label).toBe('Breakfast');
+    expect(regular['bursley']?.weekly[0]?.periods[0]?.times).toBe('7:00 am - 10:30 am');
     // A line that is only a time is not cut at the colon of the time itself.
-    const friday = regular.get('bursley')?.weekly[1];
+    const friday = regular['bursley']?.weekly[1];
     expect(friday?.periods[0]?.label).toBe('');
     expect(friday?.periods[0]?.times).toBe('10:00 am - 10:00 pm');
   });

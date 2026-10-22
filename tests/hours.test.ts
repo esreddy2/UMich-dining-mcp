@@ -7,7 +7,7 @@ describe('regular hours', () => {
   const regular = parseRegularHours(readFixture('regularhours.html'));
 
   it('finds the ten dining halls and ignores the other locations', () => {
-    expect([...regular.keys()].sort()).toEqual([
+    expect(Object.keys(regular).sort()).toEqual([
       'bursley',
       'east-quad',
       'lawyers-club',
@@ -22,7 +22,7 @@ describe('regular hours', () => {
   });
 
   it('reads the weekly schedule of Bursley', () => {
-    const bursley = regular.get('bursley');
+    const bursley = regular['bursley'];
     expect(bursley).toBeDefined();
     expect(bursley?.url).toBe('https://dining.umich.edu/menus-locations/dining-halls/bursley/');
     expect(bursley?.weekly).toHaveLength(4);
@@ -40,7 +40,7 @@ describe('regular hours', () => {
   });
 
   it('reads a closed week for Lawyers Club on Saturday', () => {
-    const lawyers = regular.get('lawyers-club');
+    const lawyers = regular['lawyers-club'];
     const saturday = lawyers?.weekly.find((entry) => entry.days.includes('Saturday'));
     expect(saturday?.closed).toBe(true);
     expect(saturday?.periods[0]?.closed).toBe(true);

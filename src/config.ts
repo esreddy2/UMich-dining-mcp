@@ -10,7 +10,7 @@ function intFromEnv(env: NodeJS.ProcessEnv, name: string, fallback: number): num
   const raw = env[name];
   if (raw === undefined || raw.trim() === '') return fallback;
   const value = Number.parseInt(raw, 10);
-  return Number.isFinite(value) && value > 0 ? value : fallback;
+  return Number.isFinite(value) && value >= 0 ? value : fallback;
 }
 
 export interface Config {
@@ -45,13 +45,27 @@ export interface Config {
     pastMenu: number;
     regularHours: number;
   };
+  /** How many upstream pages a single range query may fetch. */
+  maxRangeFetches: number;
+  /** The wall-clock budget of a single tool call, in milliseconds. */
+  callBudgetMs: number;
+  /** The largest upstream response body that will be read, in bytes. */
+  maxBodyBytes: number;
+  /** Where the persistent cache lives, or null when it is disabled. */
+  cacheDir: string | null;
+  /** How long a persistent cache entry is kept, in days. */
+  cacheMaxAgeDays: number;
+  /** The largest the persistent cache may grow, in megabytes. */
+  cacheMaxSizeMb: number;
+  /** How often the persistent cache is pruned, in milliseconds. */
+  cachePruneIntervalMs: number;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   return {
     baseUrl: (env['UMICH_DINING_BASE_URL'] ?? 'https://dining.umich.edu').replace(/\/+$/, ''),
     userAgent: env['UMICH_DINING_USER_AGENT'] ?? 'python-requests/2.32.3',
-    fallbackUserAgent: 'python-requests/2.32.3',
+    fallbackUserAgent: env['UMICH_DINING_FALLBACK_USER_AGENT'] ?? 'python-requests/2.32.3',
     timeoutMs: intFromEnv(env, 'UMICH_DINING_TIMEOUT_MS', 20_000),
     maxRetries: intFromEnv(env, 'UMICH_DINING_MAX_RETRIES', 3),
     retryBaseDelayMs: intFromEnv(env, 'UMICH_DINING_RETRY_BASE_MS', 500),
@@ -65,7 +79,21 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       pastMenu: intFromEnv(env, 'UMICH_DINING_TTL_PAST_MS', 24 * HOUR),
       regularHours: intFromEnv(env, 'UMICH_DINING_TTL_REGULAR_HOURS_MS', 24 * HOUR),
     },
+    maxRangeFetches: intFromEnv(env, 'UMICH_DINING_MAX_RANGE_FETCHES', 12),
+    callBudgetMs: intFromEnv(env, 'UMICH_DINING_CALL_BUDGET_MS', 25_000),
+    maxBodyBytes: intFromEnv(env, 'UMICH_DINING_MAX_BODY_BYTES', 8 * 1024 * 1024),
+    cacheDir: cacheDirFromEnv(env),
+    cacheMaxAgeDays: intFromEnv(env, 'UMICH_DINING_CACHE_MAX_AGE_DAYS', 30),
+    cacheMaxSizeMb: intFromEnv(env, 'UMICH_DINING_CACHE_MAX_SIZE_MB', 200),
+    cachePruneIntervalMs: intFromEnv(env, 'UMICH_DINING_CACHE_PRUNE_INTERVAL_MS', 60 * MINUTE),
   };
+}
+
+function cacheDirFromEnv(env: NodeJS.ProcessEnv): string | null {
+  const raw = env['UMICH_DINING_CACHE_DIR'];
+  if (raw !== undefined && raw.trim().toLowerCase() === 'off') return null;
+  if (raw !== undefined && raw.trim() !== '') return raw.trim();
+  return `${process.env['HOME'] ?? '/tmp'}/.cache/umich-dining-mcp`;
 }
 
 export const config: Config = loadConfig();

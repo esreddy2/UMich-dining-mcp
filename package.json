@@ -1,6 +1,6 @@
 {
   "name": "umich-dining-mcp",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "MCP server for University of Michigan Ann Arbor dining halls: menus, traits, allergens, nutrition and hours",
   "type": "module",
   "license": "MIT",
@@ -27,7 +27,8 @@
     "node": ">=20.18.1"
   },
   "bin": {
-    "umich-dining-mcp": "dist/index.js"
+    "umich-dining-mcp": "dist/index.js",
+    "umich-dining-mcp-http": "dist/http-server.js"
   },
   "main": "dist/index.js",
   "files": [
@@ -44,7 +45,8 @@
     "test:oracle": "python3 tests/oracle/build_expected.py --check",
     "start": "node dist/index.js",
     "capture": "tsx scripts/capture-fixtures.ts",
-    "capture:date": "tsx scripts/capture-fixtures.ts"
+    "capture:date": "tsx scripts/capture-fixtures.ts",
+    "start:http": "node dist/http-server.js"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.3.1",

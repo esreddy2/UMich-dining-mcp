@@ -53,10 +53,10 @@ describe('dish filters', () => {
 
   it('reads the carbon footprint as a maximum', async () => {
     mockFixtureFetch();
-    const result = await filterDishes({ max_carbon: 'medium' });
+    const result = await filterDishes({ max_carbon: 2 });
     expect(result.matches.length).toBeGreaterThan(0);
     for (const match of result.matches) {
-      expect(['low', 'medium']).toContain(match.carbonFootprint);
+      expect([1, 2]).toContain(match.carbonFootprint);
     }
   });
 
@@ -78,16 +78,15 @@ describe('dish filters', () => {
       return new Response('<html><body>nope</body></html>', { status: 200 });
     });
 
-    const result = await filterDishes({ hall: 'bursley' });
+    const result = await filterDishes({ halls: ['bursley'] });
     expect(result.failures.length).toBeGreaterThan(0);
     expect(result.failures[0]?.hall).toBe('bursley');
   });
 
-  it('carries the allergen warning', async () => {
+  it('does not repeat the long allergen caveat in the body', async () => {
     mockFixtureFetch();
     const result = await filterDishes({ exclude_allergens: ['milk'] });
-    expect(result.warning).toMatch(/allergen/i);
-    expect(result.warning).toMatch(/coeliac/i);
+    expect(result).not.toHaveProperty('warning');
   });
 
   it('uses the requested day', async () => {

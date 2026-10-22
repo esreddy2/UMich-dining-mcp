@@ -1,7 +1,7 @@
 import { load, type Cheerio, type CheerioAPI } from 'cheerio';
 import type { Element } from 'domhandler';
 import { closeTraits, carbonFootprint, mhealthyTier, traitLabel } from '../taxonomy.js';
-import type { MealName, MenuItem, Station } from '../types.js';
+import type { MealName, MenuItem, OtherMeal, Station } from '../types.js';
 import { parseNutrition } from './nutrition.js';
 import { normalizeText } from './text.js';
 
@@ -17,16 +17,25 @@ export interface ParsedMenu {
   meals: Record<MealName, Station[]>;
   /** The site's own label for each meal, e.g. "Brunch" where it says so. */
   mealLabels: Partial<Record<MealName, string>>;
+  /** Meals the site published that this server has no slot for. */
+  otherMeals: OtherMeal[];
   /** Meal labels the site used that this server does not know. */
   unknownMealLabels: string[];
   /** The date the page says it rendered, when the page exposes it. */
   renderedDate: string | null;
   itemCount: number;
   stationCount: number;
+  /** True when the site published its "no menu" marker. */
+  noMenu: boolean;
 }
 
+/**
+ * The meal labels the site uses. Brunch is the fourth: the site publishes it
+ * on the weekend days, where it is often the only meal of the afternoon.
+ */
 const MEAL_BY_LABEL: Record<string, MealName> = {
   breakfast: 'Breakfast',
+  brunch: 'Brunch',
   lunch: 'Lunch',
   dinner: 'Dinner',
 };
@@ -51,15 +60,43 @@ function pad(value: number): string {
 }
 
 /**
- * The date the page rendered, read from the jQuery UI datepicker the site
- * builds in the browser. The raw HTML does not contain it (the picker is
- * injected by script), so this returns null for a plain HTTP fetch and a date
- * for a rendered page.
+ * The date the page declares, read from `h2.menuTitle span.date`.
+ *
+ * The site writes it in the plain HTML: "Menu for Thursday, October 22, 2026".
+ * This is the date the page is about, and it is what the out-of-window guard
+ * compares with the date that was asked for.
+ */
+export function extractDeclaredDate($: CheerioAPI): string | null {
+  const text = normalizeText($('h2.menuTitle span.date, .menuTitle span.date').first().text());
+  if (!text) return null;
+
+  const match = /([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})/.exec(text);
+  if (!match) return null;
+  const month = MONTHS[match[1]!.toLowerCase()];
+  const day = Number.parseInt(match[2]!, 10);
+  const year = Number.parseInt(match[3]!, 10);
+  if (!month || !Number.isFinite(day) || !Number.isFinite(year)) return null;
+  return `${year}-${pad(month)}-${pad(day)}`;
+}
+
+/**
+ * The date the page rendered.
+ *
+ * The plain HTML states it in `h2.menuTitle span.date`; a page rendered in a
+ * browser also carries a jQuery UI datepicker, which is used as a fallback.
  */
 export function extractRenderedDate($: CheerioAPI): string | null {
-  const monthText = normalizeText($('.ui-datepicker-month, .datepicker-month').first().text());
-  const yearText = normalizeText($('.ui-datepicker-year, .datepicker-year').first().text());
-  const active = $('.ui-state-active').first();
+  const declared = extractDeclaredDate($);
+  if (declared) return declared;
+
+  // The datepicker is injected by a script, so a plain HTTP fetch never has
+  // one: the check is made once, before the four queries below.
+  const picker = $('.ui-datepicker, .datepicker').first();
+  if (picker.length === 0) return null;
+
+  const monthText = normalizeText(picker.find('.ui-datepicker-month, .datepicker-month').first().text());
+  const yearText = normalizeText(picker.find('.ui-datepicker-year, .datepicker-year').first().text());
+  const active = picker.find('.ui-state-active').first();
   const dayText = normalizeText(active.text()) || normalizeText(active.find('a, span').first().text());
   if (!monthText || !yearText || !dayText) return null;
 
@@ -150,15 +187,16 @@ function parseStations($: CheerioAPI, courses: Cheerio<Element>): Station[] {
  * `div.courses` holding `ul.courses_wrapper > li` stations, each with an `h4`
  * name and a `ul.items` list of items.
  */
-export function parseMenuPage(html: string): ParsedMenu {
-  const $ = load(html);
+export function parseMenuPage(htmlOr$: string | CheerioAPI): ParsedMenu {
+  const $ = typeof htmlOr$ === 'string' ? load(htmlOr$) : htmlOr$;
   const root = $('#mdining-items');
   if (root.length === 0) {
     throw new ParseError('The page has no #mdining-items container; it is not a dining hall menu page.');
   }
 
-  const meals: Record<MealName, Station[]> = { Breakfast: [], Lunch: [], Dinner: [] };
+  const meals: Record<MealName, Station[]> = { Breakfast: [], Brunch: [], Lunch: [], Dinner: [] };
   const mealLabels: Partial<Record<MealName, string>> = {};
+  const otherMeals: OtherMeal[] = [];
   const unknownMealLabels: string[] = [];
   let itemCount = 0;
   let stationCount = 0;
@@ -168,29 +206,36 @@ export function parseMenuPage(html: string): ParsedMenu {
     const courses = $(heading).next('.courses');
     if (courses.length === 0) return;
 
+    const stations = parseStations($, courses);
     const meal = MEAL_BY_LABEL[label.toLowerCase()];
     if (!meal) {
+      // A label this server has no slot for is kept as its own bucket: the
+      // dishes of an unknown meal are still the site's dishes.
       unknownMealLabels.push(label);
-      return;
+      otherMeals.push({ label, stations });
+    } else {
+      mealLabels[meal] = label;
+      meals[meal] = stations;
     }
-
-    const stations = parseStations($, courses);
-    mealLabels[meal] = label;
-    meals[meal] = stations;
     stationCount += stations.length;
     for (const station of stations) itemCount += station.items.length;
   });
 
-  if (stationCount === 0) {
+  // The site says so itself when a hall publishes no menu for a day.
+  const noMenu = root.find('p.no-menu, .no-menu').length > 0;
+
+  if (stationCount === 0 && !noMenu) {
     throw new ParseError('The menu page contains no stations; the site layout has probably changed.');
   }
 
   return {
     meals,
     mealLabels,
+    otherMeals,
     unknownMealLabels,
     renderedDate: extractRenderedDate($),
     itemCount,
     stationCount,
+    noMenu,
   };
 }
