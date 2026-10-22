@@ -30,6 +30,7 @@ import {
   NutrientError,
   SORT_FIELDS,
   acceptedUnits,
+  resolveSimpleSortField,
 } from './nutrition.js';
 import { encodeMenu, encodeResponse, selectNutrients, SelectionError } from './encode.js';
 import { STATION_NAMES, TRAIT_CODES } from './codes.js';
@@ -580,7 +581,7 @@ export function createServer(): McpServer {
         sort_by: z
           .string()
           .optional()
-          .describe('Sort field: nutrient key, carbonFootprint, micronutrient name, or proteinToCalorie/fiberToCalorie.'),
+          .describe('Sort field: a nutrient key, carbonFootprint, a micronutrient name, servingSize, mhealthyTier, or a ratio "numerator:denominator" (e.g. "protein:calories", "vitaminA:iron"). Legacy: proteinToCalorie, fiberToCalorie.'),
         sort_order: z
           .enum(['asc', 'desc'])
           .optional()
@@ -626,8 +627,27 @@ export function createServer(): McpServer {
           offset: args.offset,
           limit: args.limit,
         });
-        const fallback = Object.keys(args.nutrients ?? {});
-        const selection = selectNutrients(
+         const fallback = Object.keys(args.nutrients ?? {});
+         if (args.sort_by?.includes(':')) {
+           for (const part of args.sort_by.split(':')) {
+             try {
+               const canonical = resolveSimpleSortField(part);
+               if (
+                 canonical !== 'calories' &&
+                 canonical !== 'servingSize' &&
+                 canonical !== 'servingSizeGrams' &&
+                 canonical !== 'mhealthyTier' &&
+                 canonical !== 'carbonFootprint' &&
+                 !fallback.includes(canonical)
+               ) {
+                 fallback.push(canonical);
+               }
+             } catch {
+               // ignore; service validation will surface the error
+             }
+           }
+         }
+         const selection = selectNutrients(
           args.include_nutrients,
           fallback,
           args.max_carbon !== undefined || args.sort_by === 'carbonFootprint',
@@ -657,10 +677,11 @@ export function createServer(): McpServer {
     {
       title: 'List nutrition fields',
       description:
-        'List the canonical nutrient identifiers, their units, the alternative units a threshold ' +
-        'may be written in, and the Daily Value basis of the published micronutrients. A ' +
-        'constraint on a nutrient excludes the dishes that publish no value for it, and a value ' +
-        'the site writes as "trace" or "< 1%" is missing rather than zero.',
+         'List the canonical nutrient identifiers, their units, the alternative units a threshold ' +
+         'may be written in, and the Daily Value basis of the published micronutrients. A ' +
+         'constraint on a nutrient excludes the dishes that publish no value for it, and a value ' +
+         'the site writes as "trace" or "< 1%" is missing rather than zero. sortFields includes ' +
+         'servingSize, mhealthyTier and ratio syntax "a:b".',
       inputSchema: z.strictObject({}),
       outputSchema: z.object({
         fields: z.array(
