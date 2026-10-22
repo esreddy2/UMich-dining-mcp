@@ -336,16 +336,16 @@ describe('the menus of the halls', () => {
   });
 
   it('reports the service periods of every hall', async () => {
-    const { hours, failures } = await getHours();
+    const { halls, weekly, failures } = await getHours();
     expect(failures).toEqual([]);
-    expect(hours).toHaveLength(10);
-    for (const hall of hours) {
+    expect(halls).toHaveLength(10);
+    for (const hall of halls) {
       const expected = readExpected(hall.hall);
       expect(hall.today.map((period) => period.label), hall.hall).toEqual(
         expected.todayHours.map((period) => period.label),
       );
-      expect(hall.regular, hall.hall).not.toBeNull();
-      expect(hall.regular?.weekly.length, hall.hall).toBeGreaterThan(0);
+      expect(hall.weekly, hall.hall).not.toBeNull();
+      expect(weekly[hall.weekly!]?.length, hall.hall).toBeGreaterThan(0);
     }
   });
 

@@ -106,8 +106,8 @@ export interface ServicePeriod {
   label: string;
   /** Normalised time range, e.g. "9:00 am - 10:30 am". */
   times: string;
-  /** True when the site states the location is closed for that period. */
-  closed: boolean;
+  /** True when the site states the location is closed for that period. Omitted when false. */
+  closed?: boolean;
 }
 
 export interface WeeklyHours {
@@ -133,8 +133,8 @@ export interface HallHours {
   weekday?: string;
   /** Service periods for the requested day, from the hall's own page. */
   today: ServicePeriod[];
-  /** The regular weekly schedule from /menus-locations/regularhours/. */
-  regular: { weekly: WeeklyHours[] } | null;
+  /** Id of the distinct weekly schedule in the response's weekly map. */
+  weekly: string | null;
   stale: boolean;
   asOf?: string;
 }
@@ -144,4 +144,5 @@ export interface LocationSummary extends DiningHall {
   today: ServicePeriod[];
   openNow: boolean;
   stale: boolean;
+  asOf?: string;
 }

@@ -42,10 +42,9 @@ describe('sorting', () => {
     const result = (await client.callTool({
       name: 'filter_dishes',
       arguments: { hall: 'bursley', sort_by, sort_order },
-    })) as { structuredContent?: { fields: string[]; matches: unknown[][] } };
-    const fields = result.structuredContent?.fields ?? [];
+    })) as { structuredContent?: { matches: unknown[][] } };
     const rows = result.structuredContent?.matches ?? [];
-    const calories = fields.indexOf('calories');
+    const calories = 7;
     const values = rows
       .map((row) => row[calories] as number | null)
       .filter((value): value is number => value !== null);

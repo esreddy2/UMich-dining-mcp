@@ -64,8 +64,6 @@ export type EncodedDish = unknown[];
 export interface EncodedResponse {
   key: Record<string, Record<string, string>>;
   units?: Record<string, string>;
-  /** The names of the row positions, in the order the rows carry them. */
-  fields: string[];
   note?: string;
   [field: string]: unknown;
 }
@@ -260,13 +258,11 @@ export function encodeResponse(
   extraNotes: string[] = [],
 ): EncodedSweepResponse {
   const builder = createKeyBuilder();
-  const withDates = dishes.some((dish) => dish.dates !== undefined);
   const matches = dishes.map((dish) => encodeDish(dish, builder, selection));
 
   const response: EncodedSweepResponse = {
     key: buildKey(builder),
     units: { ...selection.units },
-    fields: rowFields(selection, withDates),
     ...rest,
     matches,
   };
@@ -314,7 +310,6 @@ export function encodeMenu(
   const response: EncodedResponse = {
     key: buildKey(builder),
     units: { ...selection.units },
-    fields: rowFields(selection, false, true),
     ...rest,
     meals,
   };
