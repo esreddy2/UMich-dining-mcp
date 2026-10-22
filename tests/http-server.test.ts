@@ -31,10 +31,12 @@ describe('public HTTP transport', () => {
   it('serves health without contacting the upstream', async () => {
     const response = await request('/healthz');
     expect(response.status).toBe(200);
-    const body = await response.json() as { status: string; cacheSize: number; uptimeSeconds: number };
+    const body = await response.json() as { status: string; uptimeSeconds: number; cacheSize?: unknown; lastUpstreamError?: unknown };
     expect(body.status).toBe('ok');
-    expect(body.cacheSize).toBeGreaterThanOrEqual(0);
     expect(body.uptimeSeconds).toBeGreaterThanOrEqual(0);
+    // Public: no cache size and no upstream failure leak out.
+    expect(body.cacheSize).toBeUndefined();
+    expect(body.lastUpstreamError).toBeUndefined();
   });
   it('serves a server that listens on a port of its own', async () => {
     // The allowlist holds hostnames: the port of the Host header is not part
@@ -121,6 +123,10 @@ describe('optional bearer authentication', () => {
       headers: { Host: HOST, Authorization: `Bearer ${token}` },
     });
     expect(withToken.status).toBe(200);
+    const body = await withToken.json() as { status: string; cacheSize: number; uptimeSeconds: number; lastUpstreamError: unknown };
+    expect(body.status).toBe('ok');
+    expect(body.cacheSize).toBeGreaterThanOrEqual(0);
+    expect(body.lastUpstreamError).toBeDefined();
   });
 });
 
