@@ -230,6 +230,7 @@ const filterDishesOutput = z.object({
   noMenu: z.array(z.object({ hall: z.string(), date: z.string() })).optional(),
   asOf: z.string().optional(),
   filter: z.record(z.string(), z.unknown()).optional(),
+  flags: z.record(z.string(), z.unknown()).optional(),
   nutrients: z.array(z.string()).optional(),
   matches: z.array(encodedDishSchema),
   failures: z.array(failureSchema),
@@ -284,6 +285,7 @@ const itemNutritionOutput = z.object({
   /** The micronutrients: the amount they stand for (mg, or mcg RAE for the vitamin A). */
   micronutrients: z.record(z.string(), z.number().nullable()),
   warning: z.string(),
+  asOf: z.string().optional(),
 });
 
 const dateSchema = z
@@ -455,13 +457,14 @@ export function createServer(): McpServer {
     {
       title: 'Get a dining hall menu',
       description:
-        'Get the menu of one dining hall: meals, stations and dishes, with each dish\'s traits ' +
-        '(the six boolean ones as codes), its allergens as codes, its nutrient-density tier, its ' +
-        'carbon footprint tier, its calories and its serving size. Read the "key" block to resolve ' +
-        'the codes and the "fields" list to read a row, which is an array. The full nutrition panel ' +
-        'of a single dish comes from get_item_nutrition. The ' +
-        'date defaults to today; the site publishes menus for today-3 days to today+14 days. ' +
-        ALLERGEN_CAVEAT,
+        'Get the menu of one dining hall: the meals, the stations and the dishes. The dish rows are arrays; ' +
+        'positions are [name, traits, allergens, mhealthyTier, calories, servingSize, servingSizeGrams] ' +
+        'plus the nutrients named by include_nutrients. traits are the six boolean traits as codes ' +
+        '(1 glutenfree, 2 halal, 3 kosher, 4 spicy, 5 vegan, 6 vegetarian); allergens are codes; ' +
+        'read the key block to resolve every code. mhealthyTier is 1 (Nutrient Dense Low) to 5 (Nutrient Dense High). ' +
+        'Calories are in kcal. With no meal the menu of the meal being served now is returned, or the next one ' +
+        'when the hall is closed; the response says which meal it chose. The date defaults to today; the site ' +
+        'publishes menus for today-3 days to today+14 days. ' + ALLERGEN_CAVEAT,
       inputSchema: z.strictObject({
         hall: hallIdSchema.describe('The dining hall to read.'),
         date: dateSchema.optional().describe('The day to read. Defaults to today.'),
@@ -674,6 +677,7 @@ export function createServer(): McpServer {
           failures: result.failures,
           coverage: result.coverage,
           filter: result.filter,
+          flags: result.flags,
         }, extraNotes(result)));
       } catch (error) {
         return fail(error);

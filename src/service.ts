@@ -99,6 +99,7 @@ export interface DishFilterResult {
   /** A station that matched nothing, with the names that do exist. */
   stationNote?: string;
   filter?: Record<string, unknown>;
+  flags?: Record<string, unknown>;
 }
 
 interface HallPage {
@@ -1281,6 +1282,21 @@ export async function filterDishes(options: FilterOptions = {}): Promise<DishFil
     unknownMealLabels: sweep.unknownMealLabels,
     stationNote: sweep.stationNote,
     truncationNote: sweep.matches.length > limit ? truncatedNote(limit, sweep.matches.length, options.sort_by) : undefined,
+    flags: {
+      truncated: sweep.matches.length > limit,
+      shown: Math.min(limit, sweep.matches.length),
+      total: sweep.matches.length,
+      sortBy: options.sort_by ?? null,
+      range: !!sweep.dateRange,
+      valuesFrom: sweep.dateRange ? 'first matching day' : null,
+      noMenu: sweep.noMenu,
+      pagesRequested: sweep.coverage?.pages ?? (sweep.dateRange ? 0 : 1),
+      pagesRead: sweep.coverage ? (sweep.coverage.pages - (sweep.coverage.pending ?? 0) - (sweep.coverage.failed ?? 0)) : 1,
+      pagesPending: sweep.coverage?.pending ?? 0,
+      pagesFailed: sweep.coverage?.failed ?? 0,
+      nextOffset: sweep.coverage?.nextOffset ?? null,
+      allergenCodes: sweep.matches.some((m) => m.allergens.length > 0),
+    },
     filter: {
       excludeAllergens: options.exclude_allergens ?? [],
       requireTraits: options.require_traits ?? [],
@@ -1310,7 +1326,7 @@ export interface ItemNutritionResult {
   allergens: string[];
   mhealthyTier: number | null;
   carbonFootprint: CarbonLevel | null;
-  nutrition: unknown;
+  nutrition: Nutrition | null;
   /** The weight of a serving, derived from the published serving size. */
   servingSizeGrams: number | null;
   /**
@@ -1319,6 +1335,7 @@ export interface ItemNutritionResult {
    */
   micronutrients: Record<string, number | null>;
   warning: string;
+  asOf?: string;
 }
 
 /** A dish of a menu page, with the meal and the station it was served at. */
@@ -1471,6 +1488,7 @@ export async function getItemNutrition(
     servingSizeGrams: parseServingSizeGrams(chosen.nutrition?.servingSize ?? null),
     micronutrients: micronutrientAmounts(chosen.nutrition),
     warning: ALLERGEN_REMINDER,
+    asOf: `${Math.max(0, Math.round((Date.now() - page.storedAt) / 60000))} minutes ago`,
   };
 }
 
