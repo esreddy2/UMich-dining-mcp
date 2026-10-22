@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cache } from '../src/cache.js';
-import { DiskCache } from '../src/disk-cache.js';
+import { DiskCache, diskCache } from '../src/disk-cache.js';
 import { warmerDays, warm } from '../src/warmer.js';
 import { mockFixtureFetch } from './helpers.js';
 
@@ -37,6 +37,20 @@ describe('the warmer', () => {
     const result = await warm(['bursley'], ['2026-10-21'], '2026-10-21');
     expect(result.warmed).toBe(0);
     expect(result.failed).toBe(1);
+  });
+
+  it('does not refetch a page that is still fresh', async () => {
+    mockFixtureFetch();
+    await diskCache.delete('hall:markley:2026-10-21');
+    cache.clear();
+
+    const mock = mockFixtureFetch();
+    await warm(['markley'], ['2026-10-21'], '2026-10-21');
+    expect(mock.calls).toHaveLength(1);
+
+    // A live entry is served from the cache: no second request to the site.
+    await warm(['markley'], ['2026-10-21'], '2026-10-21');
+    expect(mock.calls).toHaveLength(1);
   });
 });
 

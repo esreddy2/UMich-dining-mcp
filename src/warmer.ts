@@ -52,7 +52,9 @@ export async function warm(
   for (const hall of halls) {
     for (const date of dates) {
       try {
-        await loadHallPage(hall, date, today, { force: true, background: true });
+        // A page that is still live in memory or on disk needs no request:
+        // the warmer refetches only when the TTL has run out.
+        await loadHallPage(hall, date, today, { force: false, background: true });
         warmed += 1;
       } catch {
         // The warmer never fails the server: one page is not worth a report.
