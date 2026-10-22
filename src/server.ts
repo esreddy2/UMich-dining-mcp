@@ -544,25 +544,16 @@ export function createServer(): McpServer {
     {
       title: 'Filter dishes',
       description:
-        'Filter the dining hall menus by allergen, trait, nutrient density, carbon footprint and ' +
-        'nutrients. exclude_allergens removes dishes that carry any of the listed allergens; ' +
-        'require_traits keeps only dishes that carry every listed trait; min_mhealthy is the lowest ' +
-        'acceptable nutrient-density tier (3 = Nutrient Dense Medium or better); max_carbon is the ' +
-        'highest acceptable carbon footprint (1 = low, 2 = medium, 3 = high). Both of them drop the ' +
-        'dishes the site did not tag: a dish with no nutrient density is not "dense", and a dish ' +
-        'with no carbon footprint does not pass a carbon cap. max_calories and ' +
-        'min_calories and the sodium bounds are numeric caps that exclude dishes without published ' +
-        'values. nutrients takes a range per nutrient, e.g. {"protein": {"min": 20, "unit": "g"}}; ' +
-        'the unit defaults to the nutrient\'s own and is checked. A micronutrient threshold without ' +
-        'a unit is read in the amount the row carries: {"Iron": {"min": 2}} means 2 mg of iron, ' +
-        'while {"Iron": {"min": 2, "unit": "%DV"}} means 2 percent of the Daily Value. include_nutrients names the ' +
-        'nutrients to return; it defaults to the ones the filter used, and a nutrient the filter ' +
-        'constrained is always returned. The row always carries the calories and the serving ' +
-        'size; every other nutrient, the sodium included, is asked for by name. A single day is filtered by ' +
-        'default; "from" and "to" filter a range and each row then lists the days the dish appeared ' +
-        'on. The rows carry codes: read key.halls, key.meals, key.stations, key.traits and ' +
-        'key.allergens to resolve them, and the "fields" list to read a row. ' +
-        ALLERGEN_CAVEAT,
+        'Filter the dining hall menus by allergen, trait, nutrient density, carbon footprint, calories, ' +
+        'sodium and name. Every parameter is optional; with no parameter at all this lists every dish published ' +
+        'for the day. Allergens: alcohol, beef, coconut, eggs, fish, item-is-deep-fried, milk, oats, peanuts, ' +
+        'pork, sesame-seed, shellfish, soy, tree-nuts, wheat_barley_rye. exclude_allergens drops every dish ' +
+        'carrying any of them. Traits: glutenfree, halal, kosher, spicy, vegan, vegetarian. require_traits keeps ' +
+        'only the dishes carrying all of them. min_mhealthy: keep tiers >= this (1-5). max_carbon: keep tiers <= ' +
+        'this (1 low, 2 medium, 3 high). A dish the site did not tag is dropped by both. nutrients: a range per ' +
+        'nutrient, e.g. {"protein":{"min":20,"unit":"g"}}. query: case-insensitive substring of the dish name. ' +
+        'Response: matches holds the rows, fields names row positions, key resolves codes, units gives units, ' +
+        'filter echoes the filter applied, flags says what the answer does not cover. ' + ALLERGEN_CAVEAT,
       inputSchema: z.strictObject({
         exclude_allergens: z
           .array(allergenSchema)
