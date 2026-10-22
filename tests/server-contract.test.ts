@@ -375,9 +375,9 @@ describe('the contract of the server', () => {
         expect(payload.key.allergens?.[String(allergen)]).toBeTruthy();
       }
     }
-    expect(payload.units.calories).toBe('kcal');
+    // Units is omitted when it carries only calories.
+    expect(payload.units).toBeUndefined();
     // The sodium is not in the default row: it is asked for like any other.
-    expect(payload.units.sodium).toBeUndefined();
     for (const row of payload.matches) {
       expect(row).not.toHaveProperty('sodium');
     }
@@ -449,7 +449,7 @@ describe('the contract of the server', () => {
       fields: string[];
       matches: unknown[][];
     };
-    expect(Object.keys(payload.units).sort()).toEqual(['calories']);
+    expect(payload.units).toBeUndefined();
     expect(payload.fields).not.toContain('protein');
     expect(payload.fields).not.toContain('iron');
     expect(payload.matches.length).toBeGreaterThan(0);
