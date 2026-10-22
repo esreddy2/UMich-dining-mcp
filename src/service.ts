@@ -997,6 +997,7 @@ function sortMatches(
   const order = sortOrder === 'asc' ? 1 : -1;
   const getValue = (m: DishMatch): number | null => {
     if (sortField === 'calories') return m.calories;
+    if (sortField === 'carbonFootprint') return m.carbonFootprint;
     if (sortField === 'sodium') return m.sodiumMg;
     if (sortField === 'proteinToCalorie' || sortField === 'protein_to_calorie') {
       const p = parseNutritionNumber(m.nutrition?.protein ?? null, 'protein');

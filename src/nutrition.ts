@@ -276,6 +276,7 @@ export function resolveNutrientName(name: string): { key: string; micronutrient:
  */
 export const SORT_FIELDS: readonly string[] = [
   ...NUTRIENT_KEYS,
+  'carbonFootprint',
   'proteinToCalorie',
   'protein_to_calorie',
   'fiberToCalorie',

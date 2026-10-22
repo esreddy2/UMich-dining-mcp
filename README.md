@@ -155,6 +155,8 @@ repeated on every row of the answer: a named row cost 216 bytes, an array row co
   same station carries the same code in every response, so a code can be remembered.
 - `mhealthyTier` is 1 (Nutrient Dense Low) to 5 (Nutrient Dense High). The scale is fixed
   and described in the tool descriptions and in `umich://taxonomy`.
+- A row carries the carbon tier (`carbonFootprint`) only when the call constrains it with
+  `max_carbon` or sorts by `carbonFootprint`; otherwise it is left out to keep the row small.
 - The `traits` array carries the six boolean traits only; the density tier is lifted into
   its own numeric field.
 - The `units` map gives the unit of every nutrient the response returns. A micronutrient

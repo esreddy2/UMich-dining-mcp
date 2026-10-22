@@ -64,6 +64,9 @@ every row: a named row cost 216 bytes, an array row costs 72.
   `key.allergens`.
 - The `traits` array carries the six boolean traits only. The density tier
   is lifted into `mhealthyTier`, because that is the number the filters speak.
+- A row carries the carbon tier (`carbonFootprint`) only when the call
+  constrains it with `max_carbon` or sorts by `carbonFootprint`; otherwise it
+  is left out to keep the row small.
 - The `units` map gives the unit of every nutrient the response returns.
 - The `fields` list names the positions of a row, in order. A row always carries the
   hall, the meal, the station, the name, the traits, the allergens, the density tier,
