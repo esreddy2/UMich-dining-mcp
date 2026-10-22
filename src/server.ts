@@ -196,7 +196,7 @@ const getMenuOutput = z.object({
   hallName: z.string(),
   date: z.string(),
   key: keySchema,
-  units: z.record(z.string(), z.string()),
+  units: z.record(z.string(), z.string()).optional(),
   /** The names of the row positions, in the order the rows carry them. */
   fields: fieldsSchema,
   note: z.string().optional(),
@@ -215,7 +215,7 @@ const getMenuOutput = z.object({
 
 const filterDishesOutput = z.object({
   key: keySchema,
-  units: z.record(z.string(), z.string()),
+  units: z.record(z.string(), z.string()).optional(),
   /** The names of the row positions, in the order the rows carry them. */
   fields: fieldsSchema,
   note: z.string().optional(),
@@ -269,7 +269,7 @@ const findOpenNowOutput = z.object({
 
 const itemNutritionOutput = z.object({
   key: keySchema,
-  units: z.record(z.string(), z.string()),
+  units: z.record(z.string(), z.string()).optional(),
   hall: z.number(),
   date: z.string(),
   meal: z.number(),

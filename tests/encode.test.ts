@@ -180,12 +180,12 @@ describe('the coded row', () => {
     expect(response.fields).toContain('iron');
     // The site publishes 15 %DV of an 18 mg Daily Value: 2.7 mg.
     expect(at(response.matches[0]!, 'iron', response.fields)).toBe(2.7);
-    expect(response.units.iron).toBe('mg');
+    expect(response.units!.iron).toBe('mg');
   });
 
   it('leaves the sodium out unless it is asked for', () => {
     const without = encodeResponse([dish()], selectNutrients(undefined));
-    expect(without.units).toEqual({ calories: 'kcal' });
+    expect(without.units).toBeUndefined();
     expect(without.fields).not.toContain('sodium');
 
     const with_ = encodeResponse([dish()], selectNutrients(['sodium']));

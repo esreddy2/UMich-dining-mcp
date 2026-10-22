@@ -63,7 +63,7 @@ export type EncodedDish = unknown[];
 
 export interface EncodedResponse {
   key: Record<string, Record<string, string>>;
-  units: Record<string, string>;
+  units?: Record<string, string>;
   note?: string;
   /** The names of the row positions, in the order the rows carry them. */
   fields: string[];
@@ -276,6 +276,10 @@ export function encodeResponse(
   notes.push(...extraNotes);
   if (notes.length > 0) response.note = notes.join(' ');
 
+  if (response.units && Object.keys(response.units).length <= 1) {
+    delete response.units;
+  }
+
   return response;
 }
 
@@ -321,6 +325,10 @@ export function encodeMenu(
   );
   if (hasAllergens) notes.unshift(ALLERGEN_NOTE);
   if (notes.length > 0) response.note = notes.join(' ');
+
+  if (response.units && Object.keys(response.units).length <= 1) {
+    delete response.units;
+  }
 
   return response;
 }
