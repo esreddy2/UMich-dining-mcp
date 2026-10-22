@@ -570,8 +570,7 @@ export function createServer(): McpServer {
         'positions, in order. The row always carries the calories and the serving ' +
         'size; every other nutrient, the sodium included, is asked for with include_nutrients. ' +
         'mhealthyTier is 1 (Nutrient Dense Low) to 5 (Nutrient ' +
-        'Dense High) and carbonFootprint is 1 (low), 2 (medium) or 3 (high). The rows are ' +
-        'returned in the order asked for, and "limit" takes the first of them: the default is 50.',
+        'Dense High). The rows are returned in the order asked for, and "limit" takes the first of them: the default is 50.',
       inputSchema: z.strictObject({
         query: z.string().min(1).describe('Text to look for in the dish names.'),
         hall: hallsSchema,

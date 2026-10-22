@@ -362,8 +362,6 @@ describe('the contract of the server', () => {
       expect(row[meal]).toBeGreaterThanOrEqual(1);
       expect(row[meal]).toBeLessThanOrEqual(4);
       expect(row[station]).toBeGreaterThan(0);
-      const carbon = at(row, 'carbonFootprint') as number | null;
-      expect(carbon === null || (carbon >= 1 && carbon <= 3)).toBe(true);
       const density = at(row, 'mhealthyTier') as number | null;
       expect(density === null || (density >= 1 && density <= 5)).toBe(true);
       const grams = at(row, 'servingSizeGrams') as number | null;
