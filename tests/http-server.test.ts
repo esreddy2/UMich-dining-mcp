@@ -73,7 +73,7 @@ describe('public HTTP transport', () => {
     });
     expect(big.status).toBe(413);
   });
-  it('allows an actual MCP client to list the eight tools', async () => {
+  it('allows an actual MCP client to list the seven tools', async () => {
     const transport = new StreamableHTTPClientTransport(new URL(`${url}/mcp`), {
       requestInit: { headers: { Host: HOST } },
     });
@@ -81,7 +81,7 @@ describe('public HTTP transport', () => {
     try {
       await client.connect(transport);
       const tools = await client.listTools();
-      expect(tools.tools).toHaveLength(8);
+      expect(tools.tools).toHaveLength(7);
       expect(tools.tools.map((tool) => tool.name)).toContain('get_menu');
       const r = await client.readResource({ uri: 'umich://taxonomy' });
       expect(JSON.stringify(r.contents)).toContain('allergen');

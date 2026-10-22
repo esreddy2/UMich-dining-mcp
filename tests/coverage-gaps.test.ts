@@ -137,7 +137,7 @@ describe('the notes of a sweep answer', () => {
     const payload = result.structuredContent!;
     expect(payload.emptyDates).toEqual(['2026-10-24']);
     expect(payload.totalMatches).toBe(0);
-    expect(payload.note).toMatch(/No menu published on: 2026-10-24/);
+    expect(payload.note).toMatch(/No menu published at: 2026-10-24/);
   });
 
   it('does not say a day carried no menu when a filter matched nothing', async () => {

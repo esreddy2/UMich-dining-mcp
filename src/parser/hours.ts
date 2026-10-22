@@ -158,7 +158,13 @@ export function parseRegularHours(html: string): Record<HallId, RegularHours> {
       const periods = parsePeriods(cells.eq(1).html() ?? '');
       const days = expandDays(dayLabel);
       if (days.length === 0) return;
-      current.weekly.push({ days, periods, closed: periods.every((period) => period.closed) });
+      // A weekday must not appear in two entries with conflicting closed
+      // state: keep the first (most specific) entry for any day already
+      // covered and drop the duplicates from this one.
+      const covered = new Set(current.weekly.flatMap((entry) => entry.days));
+      const unique = days.filter((day) => !covered.has(day));
+      if (unique.length === 0) return;
+      current.weekly.push({ days: unique, periods, closed: periods.every((period) => period.closed) });
     });
   });
 

@@ -353,7 +353,7 @@ describe('the menus of the halls', () => {
     const { open, closed, failures } = await findOpenNow();
     expect(failures).toEqual([]);
     expect(open.length + closed.length).toBe(10);
-    const ids = [...open, ...closed].map((location) => location.id);
+    const ids = [...open.map((location) => location.id), ...closed];
     expect(new Set(ids).size).toBe(10);
   });
 });
@@ -458,7 +458,7 @@ describe('the filters of the dishes', () => {
   });
 
   it('reads the calories and the sodium as caps', async () => {
-    const result = await filterDishes({ max_calories: 300, max_sodium_mg: 500 });
+    const result = await filterDishes({ nutrients: { calories: { max: 300 }, sodium: { max: 500 } } });
     const expected = ALL_DISHES.filter(
       (dish) =>
         dish.calories !== null &&

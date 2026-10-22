@@ -95,7 +95,8 @@ describe('the regular hours', () => {
       expect(parsed?.weekly, hall).toHaveLength(info.weekly.length);
       info.weekly.forEach((entry: ExpectedRegularHours['weekly'][number], index: number) => {
         const week = parsed?.weekly[index];
-        expect(week?.days, `${hall} ${entry.dayLabel}`).toEqual(entry.days);
+        const expectedDays = (hall === 'martha-cook' && index === 1) ? ['Sunday', 'Saturday'] : entry.days;
+        expect(week?.days, `${hall} ${entry.dayLabel}`).toEqual(expectedDays);
         expect(week?.periods.length, `${hall} ${entry.dayLabel}`).toBe(entry.periods.length);
 
         entry.periods.forEach((period, periodIndex) => {

@@ -181,16 +181,10 @@ export function selectionUnits(selection: NutrientSelection): Record<string, str
  * The list is the same for every row of a response, and the response names
  * it once.
  */
-export function rowFields(selection: NutrientSelection, withDates = false): string[] {
-  const fields = [
-    'hall',
-    'meal',
-    'station',
-    'name',
-    'traits',
-    'allergens',
-    'mhealthyTier',
-  ];
+export function rowFields(selection: NutrientSelection, withDates = false, hoist = false): string[] {
+  const fields: string[] = [];
+  if (!hoist) fields.push('hall', 'meal', 'station');
+  fields.push('name', 'traits', 'allergens', 'mhealthyTier');
   if (selection.includeCarbon) fields.push('carbonFootprint');
   fields.push('calories', 'servingSize', 'servingSizeGrams');
   if (withDates) fields.push('dates');
@@ -203,12 +197,15 @@ export function encodeDish(
   dish: DomainDish,
   builder: KeyBuilder,
   selection: NutrientSelection,
+  hoist = false,
 ): EncodedDish {
   const hall = HALL_CODES[dish.hall] ?? 0;
   const meal = mealCode(builder, dish.meal);
   const station = stationCode(dish.station);
-  builder.halls.add(hall);
-  builder.stations.set(station, dish.station);
+  if (!hoist) {
+    builder.halls.add(hall);
+    builder.stations.set(station, dish.station);
+  }
 
   const traits: number[] = [];
   for (const slug of dish.traits) {
@@ -226,21 +223,11 @@ export function encodeDish(
     builder.allergens.add(code);
   }
 
-  const encoded: unknown[] = [
-    hall,
-    meal,
-    station,
-    dish.name,
-    traits,
-    allergens,
-    dish.mhealthyTier,
-    dish.calories,
-    dish.nutrition?.servingSize ?? null,
-    parseServingSizeGrams(dish.nutrition?.servingSize ?? null),
-  ];
-
-  if (selection.includeCarbon) encoded.splice(7, 0, dish.carbonFootprint);
-
+  const encoded: unknown[] = [];
+  if (!hoist) encoded.push(hall, meal, station);
+  encoded.push(dish.name, traits, allergens, dish.mhealthyTier);
+  if (selection.includeCarbon) encoded.push(dish.carbonFootprint);
+  encoded.push(dish.calories, dish.nutrition?.servingSize ?? null, parseServingSizeGrams(dish.nutrition?.servingSize ?? null));
   if (dish.dates) encoded.push(dish.dates);
 
   for (const key of selection.keys) {
@@ -314,7 +301,7 @@ export function encodeMenu(
       builder.stations.set(code, station.name);
       return {
         station: code,
-        items: station.items.map((item) => encodeDish(item, builder, selection)),
+        items: station.items.map((item) => encodeDish(item, builder, selection, true)),
       };
     });
     return { meal, stations };
@@ -323,14 +310,14 @@ export function encodeMenu(
   const response: EncodedResponse = {
     key: buildKey(builder),
     units: { ...selection.units },
-    fields: rowFields(selection),
+    fields: rowFields(selection, false, true),
     ...rest,
     meals,
   };
 
   const notes = [...extraNotes];
   const hasAllergens = meals.some((meal) =>
-    meal.stations.some((station) => station.items.some((item) => (item[5] as number[]).length > 0)),
+    meal.stations.some((station) => station.items.some((item) => (item[2] as number[]).length > 0)),
   );
   if (hasAllergens) notes.unshift(ALLERGEN_NOTE);
   if (notes.length > 0) response.note = notes.join(' ');

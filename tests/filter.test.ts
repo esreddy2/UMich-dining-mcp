@@ -62,7 +62,7 @@ describe('dish filters', () => {
 
   it('applies the calorie and sodium caps', async () => {
     mockFixtureFetch();
-    const result = await filterDishes({ max_calories: 300, max_sodium_mg: 500 });
+    const result = await filterDishes({ nutrients: { calories: { max: 300 }, sodium: { max: 500 } } });
     for (const match of result.matches) {
       expect(match.calories).not.toBeNull();
       expect(match.calories as number).toBeLessThanOrEqual(300);

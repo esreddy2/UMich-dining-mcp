@@ -129,11 +129,14 @@ export interface HallHours {
   hall: HallId;
   name: string;
   date: string;
+  /** The weekday name of the requested date. */
+  weekday?: string;
   /** Service periods for the requested day, from the hall's own page. */
   today: ServicePeriod[];
   /** The regular weekly schedule from /menus-locations/regularhours/. */
-  regular: RegularHours | null;
+  regular: { weekly: WeeklyHours[] } | null;
   stale: boolean;
+  asOf?: string;
 }
 
 export interface LocationSummary extends DiningHall {
