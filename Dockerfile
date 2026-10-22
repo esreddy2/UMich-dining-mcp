@@ -1,6 +1,6 @@
 # Fully pinned multi-arch index digest from docker-library/repo-info (2026-09).
 # Retain and rotate this digest deliberately, not automatically during deployment.
-FROM node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS builder
+FROM node:25-alpine@sha256:bdf2cca6fe3dabd014ea60163eca3f0f7015fbd5c7ee1b0e9ccb4ced6eb02ef4 AS builder
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts --no-audit --no-fund
@@ -8,7 +8,7 @@ COPY tsconfig.json tsconfig.build.json ./
 COPY src/ ./src/
 RUN npm run build && npm prune --omit=dev --ignore-scripts --no-audit --no-fund
 
-FROM node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402
+FROM node:25-alpine@sha256:bdf2cca6fe3dabd014ea60163eca3f0f7015fbd5c7ee1b0e9ccb4ced6eb02ef4
 ENV NODE_ENV=production UMICH_MCP_HTTP_HOST=0.0.0.0 UMICH_MCP_HTTP_PORT=8080
 WORKDIR /app
 # The server runs on node alone: the npm CLI is not used at runtime, and the
