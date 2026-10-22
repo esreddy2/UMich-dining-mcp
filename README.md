@@ -210,6 +210,18 @@ two cannot be combined with `date`. A range that does not fit in one call is rea
 windows with `offset`; the `coverage` block of the answer names the offset of the next
 window.
 
+## Time
+
+Every time the server reports is **campus time**: the time zone of Ann Arbor,
+`America/Detroit`, which is Eastern Standard Time and Eastern Daylight Time in the summer.
+The day the site publishes, the mealtimes, and the "today" of a cache entry are all read in
+that zone.
+
+The zone of the machine the server runs on does not matter. A server in Chicago and a server
+in UTC answer the same question the same way, and the test suite checks that by running the
+meal selection under several host zones. Set `UMICH_DINING_TIMEZONE` only to point the
+server at a mirror of the site in another zone.
+
 ## Filters
 
 | Parameter | Meaning |
@@ -273,6 +285,7 @@ implies another (halal does not imply vegetarian, and neither does kosher).
 |---|---|---|
 | `UMICH_DINING_USER_AGENT` | `python-requests/2.32.3` | The User-Agent to use. |
 | `UMICH_DINING_BASE_URL` | `https://dining.umich.edu` | The site to read. |
+| `UMICH_DINING_TIMEZONE` | `America/Detroit` | The time zone of the campus: the day the site publishes and the mealtimes are read in it. |
 | `UMICH_DINING_TIMEOUT_MS` | `20000` | Per-request timeout. |
 | `UMICH_DINING_MAX_RETRIES` | `3` | Retries after the first attempt. |
 | `UMICH_DINING_MAX_CONCURRENCY` | `2` | Requests in flight. |

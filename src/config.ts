@@ -3,6 +3,8 @@
  * adjust the request profile without a rebuild.
  */
 
+import { CAMPUS_TIMEZONE } from './clock.js';
+
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 
@@ -71,7 +73,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     retryBaseDelayMs: intFromEnv(env, 'UMICH_DINING_RETRY_BASE_MS', 500),
     maxConcurrentRequests: intFromEnv(env, 'UMICH_DINING_MAX_CONCURRENCY', 2),
     minRequestGapMs: intFromEnv(env, 'UMICH_DINING_MIN_GAP_MS', 500),
-    timezone: env['UMICH_DINING_TIMEZONE'] ?? 'America/Detroit',
+    /** Time zone the site publishes "today" in: the campus, EST/EDT. */
+    timezone: env['UMICH_DINING_TIMEZONE'] ?? CAMPUS_TIMEZONE,
     dateWindow: { minDays: -3, maxDays: 14 },
     ttl: {
       todayMenu: intFromEnv(env, 'UMICH_DINING_TTL_TODAY_MS', 15 * MINUTE),
