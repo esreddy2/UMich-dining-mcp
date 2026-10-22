@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cache } from '../src/cache.js';
-import { ServiceError, countItems, getMenu, todayIn, validateDate } from '../src/service.js';
-import { readFixture } from './helpers.js';
+import { ServiceError, countItems, filterDishes, getMenu, todayIn, validateDate } from '../src/service.js';
+import { readFixture, withDeclaredDate } from './helpers.js';
 
 const MONTH_NAMES = [
   'January',
@@ -29,8 +29,8 @@ function datepickerMarkup(date: string): string {
     </div>`;
 }
 
-function withDatepicker(date: string): string {
-  return readFixture('bursley.html').replace('</body>', `${datepickerMarkup(date)}</body>`);
+function withDatepicker(date: string, html: string = readFixture('bursley.html')): string {
+  return html.replace('</body>', `${datepickerMarkup(date)}</body>`);
 }
 
 /**
@@ -76,23 +76,49 @@ describe('date handling', () => {
     expect(calls).toHaveLength(0);
   });
 
-  it('fails when the page rendered another day', async () => {
+  it('fails when the page declares another day', async () => {
     vi.stubGlobal('fetch', async (): Promise<Response> =>
-      new Response(withDatepicker('2019-10-20'), { status: 200 }),
+      new Response(withDeclaredDate(readFixture('bursley.html'), '2019-10-20'), { status: 200 }),
     );
 
     await expect(getMenu('bursley')).rejects.toThrow(/returned the menu for 2019-10-20/);
   });
 
-  it('accepts a page that rendered the requested day', async () => {
+  it('accepts a page that declares the requested day', async () => {
     const today = todayIn();
     vi.stubGlobal('fetch', async (): Promise<Response> =>
-      new Response(withDatepicker(today), { status: 200 }),
+      new Response(withDeclaredDate(readFixture('bursley.html'), today), { status: 200 }),
     );
 
     const page = await getMenu('bursley', today);
     expect(page.menu.renderedDate).toBe(today);
     expect(countItems(page.menu.meals)).toBe(69);
+  });
+
+  it('falls back to the datepicker when the page states no date', async () => {
+    const today = todayIn();
+    const withoutTitle = readFixture('bursley.html').replace(
+      /<h2 class="menuTitle">.*?<\/h2>/,
+      '<h2 class="menuTitle">Menu</h2>',
+    );
+    vi.stubGlobal('fetch', async (): Promise<Response> =>
+      new Response(withDatepicker(today, withoutTitle), { status: 200 }),
+    );
+
+    const page = await getMenu('bursley', today);
+    expect(page.menu.renderedDate).toBe(today);
+  });
+
+  it('fails when the page declares another day, in a sweep too', async () => {
+    vi.stubGlobal('fetch', async (): Promise<Response> =>
+      new Response(withDeclaredDate(readFixture('bursley.html'), '2019-10-20'), { status: 200 }),
+    );
+
+    // The sweep reports the failure of the hall rather than its dishes.
+    const result = await filterDishes({ halls: ['bursley'] });
+    expect(result.matches).toHaveLength(0);
+    expect(result.failures).toHaveLength(1);
+    expect(result.failures[0]?.error).toMatch(/returned the menu for 2019-10-20/);
   });
 
   it('fails when no menu is published for the day', async () => {

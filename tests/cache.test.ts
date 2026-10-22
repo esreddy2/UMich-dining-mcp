@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TtlCache } from '../src/cache.js';
 import { cache } from '../src/cache.js';
 import { countItems, getMenu, listLocations } from '../src/service.js';
-import { mockFixtureFetch, readFixture } from './helpers.js';
+import { fixtureResponse, mockFixtureFetch, readFixture } from './helpers.js';
 
 describe('cache', () => {
   beforeEach(() => {
@@ -32,7 +32,12 @@ describe('cache', () => {
     };
 
     const first = await store.fetch('key', ttl, loader);
-    expect(first).toEqual({ value: 'first', stale: false, storedAt: expect.any(Number) });
+    expect(first).toEqual({
+      value: 'first',
+      stale: false,
+      storedAt: expect.any(Number),
+      cached: false,
+    });
 
     await new Promise((resolve) => setTimeout(resolve, ttl + 5));
 
@@ -58,8 +63,8 @@ describe('cache', () => {
       if (url.includes('regularhours')) {
         return new Response(readFixture('regularhours.html'), { status: 200 });
       }
-      const name = `${new URL(url).pathname.replace(/\/+$/, '').split('/').pop()}.html`;
-      return new Response(readFixture(name), { status: 200 });
+      const response = fixtureResponse(url);
+      return response ?? new Response('not found', { status: 404 });
     });
 
     const { locations, failures } = await listLocations();

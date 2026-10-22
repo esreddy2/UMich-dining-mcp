@@ -1,0 +1,12 @@
+[Unit]
+Description=Check for a published UMich Dining MCP release twice per hour
+
+[Timer]
+OnBootSec=8min
+OnUnitInactiveSec=30min
+RandomizedDelaySec=10min
+Persistent=true
+Unit=umich-dining-mcp-update.service
+
+[Install]
+WantedBy=timers.target

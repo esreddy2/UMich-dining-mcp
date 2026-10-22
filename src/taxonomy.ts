@@ -76,7 +76,7 @@ export const MHEALTHY_TIERS = ['mhealthy1', 'mhealthy2', 'mhealthy3', 'mhealthy4
 export const CARBON_TIERS = ['carbonlow', 'carbonmedium', 'carbonhigh'] as const;
 
 export type MHealthyTier = 1 | 2 | 3 | 4 | 5;
-export type CarbonTier = 'low' | 'medium' | 'high';
+export type CarbonTier = 1 | 2 | 3;
 
 /**
  * The only boolean implication the site's data supports. Verified across all
@@ -91,6 +91,8 @@ export const TRAIT_IMPLICATIONS: Record<string, string[]> = {
   vegan: ['vegetarian'],
 };
 
+const TRAIT_IMPLICATIONS_ENTRIES = Object.entries(TRAIT_IMPLICATIONS);
+
 export const ALLERGEN_CAVEAT = [
   'Allergen data is only as good as the site. The menu page flags the allergens',
   'the kitchen reported for a dish, but the data does not distinguish "contains"',
@@ -102,6 +104,17 @@ export const ALLERGEN_CAVEAT = [
   'safe for someone with coeliac disease. Dedicated gluten-free pantries exist',
   'only at South Quad, East Quad, Mosher-Jordan and Bursley.',
 ].join(' ');
+
+/**
+ * The one-line reminder that stands in for the caveat in a response body.
+ *
+ * The long caveat lives in the description of every tool that returns allergen
+ * data and in `umich://taxonomy`; repeating it in every body would cost about
+ * a hundred and forty tokens per call.
+ */
+export const ALLERGEN_REMINDER =
+  'Allergen data is advisory: the site reports the allergens a kitchen flagged, ' +
+  'not an ingredient list. See umich://taxonomy for the full caveat.';
 
 export function allergenLabel(slug: string): string {
   return ALLERGENS[slug as AllergenSlug] ?? slug;
@@ -128,7 +141,7 @@ export function closeTraits(traits: Iterable<string>): string[] {
   let changed = true;
   while (changed) {
     changed = false;
-    for (const [trait, implies] of Object.entries(TRAIT_IMPLICATIONS)) {
+    for (const [trait, implies] of TRAIT_IMPLICATIONS_ENTRIES) {
       if (!result.has(trait)) continue;
       for (const implied of implies) {
         if (!result.has(implied)) {
@@ -150,11 +163,11 @@ export function mhealthyTier(traits: Iterable<string>): MHealthyTier | null {
   return null;
 }
 
-/** The carbon footprint tier of an item, or null when it has none. */
+/** The carbon footprint tier of an item, or null when it has none. Returns 1=low, 2=medium, 3=high. */
 export function carbonFootprint(traits: Iterable<string>): CarbonTier | null {
   for (const trait of traits) {
     const index = (CARBON_TIERS as readonly string[]).indexOf(trait);
-    if (index >= 0) return (['low', 'medium', 'high'] as const)[index] ?? null;
+    if (index >= 0) return (index + 1) as CarbonTier;
   }
   return null;
 }

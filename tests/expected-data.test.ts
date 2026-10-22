@@ -39,10 +39,10 @@ function closeTraits(traits: Iterable<string>): string[] {
 }
 
 const MHEALTHY_TIERS = ['mhealthy1', 'mhealthy2', 'mhealthy3', 'mhealthy4', 'mhealthy5'];
-const CARBON_TIERS: Record<string, 'low' | 'medium' | 'high'> = {
-  carbonlow: 'low',
-  carbonmedium: 'medium',
-  carbonhigh: 'high',
+const CARBON_TIERS: Record<string, 1 | 2 | 3> = {
+  carbonlow: 1,
+  carbonmedium: 2,
+  carbonhigh: 3,
 };
 
 function expectedTraits(item: ExpectedItem): string[] {
@@ -58,7 +58,7 @@ function expectedMhealthy(item: ExpectedItem): number | null {
   return null;
 }
 
-function expectedCarbon(item: ExpectedItem): 'low' | 'medium' | 'high' | null {
+function expectedCarbon(item: ExpectedItem): 1 | 2 | 3 | null {
   for (const trait of item.traitClasses) {
     const tier = CARBON_TIERS[trait];
     if (tier) return tier;

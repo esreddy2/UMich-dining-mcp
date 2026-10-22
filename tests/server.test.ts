@@ -18,6 +18,7 @@ const TOOL_NAMES = [
   'get_hours',
   'find_open_now',
   'get_item_nutrition',
+  'list_nutrition_fields',
 ];
 
 describe('server', () => {
@@ -36,7 +37,7 @@ describe('server', () => {
     vi.unstubAllGlobals();
   });
 
-  it('registers exactly seven tools and two resources', async () => {
+  it('registers exactly eight tools and two resources', async () => {
     const tools = await client.listTools();
     expect(tools.tools.map((tool) => tool.name).sort()).toEqual([...TOOL_NAMES].sort());
 
@@ -94,12 +95,22 @@ describe('server', () => {
       hall: string;
       totalStations: number;
       totalItems: number;
-      meals: Record<string, unknown[]>;
+      key: { meals: Record<string, string> };
+      meals: { meal: number; stations: { station: number; items: unknown[] }[] }[];
+      otherMeals: unknown[];
+      unknownMealLabels: string[];
+      noMenu: boolean;
     };
     expect(payload.hall).toBe('bursley');
     expect(payload.totalStations).toBe(22);
     expect(payload.totalItems).toBe(69);
-    expect(Object.keys(payload.meals).sort()).toEqual(['Breakfast', 'Dinner', 'Lunch']);
+    // The meals are codes now, and the key resolves them.
+    expect(Object.keys(payload.key.meals).sort()).toEqual(['1', '3', '4']);
+    const meals = payload.meals.map((meal) => payload.key.meals[String(meal.meal)]);
+    expect(meals.sort()).toEqual(['Breakfast', 'Dinner', 'Lunch']);
+    expect(payload.otherMeals).toEqual([]);
+    expect(payload.unknownMealLabels).toEqual([]);
+    expect(payload.noMenu).toBe(false);
   });
 
   it('rejects a hall the model made up', async () => {
@@ -119,9 +130,14 @@ describe('server', () => {
     mockFixtureFetch();
     const search = await client.callTool({ name: 'search_dishes', arguments: { query: 'oatmeal' } });
     expect(search.isError).toBeFalsy();
-    const searchPayload = search.structuredContent as { totalMatches: number; matches: { name: string }[] };
+    const searchPayload = search.structuredContent as {
+      totalMatches: number;
+      fields: string[];
+      matches: unknown[][];
+    };
     expect(searchPayload.totalMatches).toBeGreaterThan(0);
-    expect(searchPayload.matches[0]?.name.toLowerCase()).toContain('oatmeal');
+    const name = searchPayload.fields.indexOf('name');
+    expect(String(searchPayload.matches[0]?.[name]).toLowerCase()).toContain('oatmeal');
 
     const filter = await client.callTool({
       name: 'filter_dishes',
@@ -129,15 +145,68 @@ describe('server', () => {
     });
     expect(filter.isError).toBeFalsy();
     const filterPayload = filter.structuredContent as {
-      matches: { allergens: string[]; traits: string[] }[];
-      warning: string;
+      key: { allergens: Record<string, string>; traits: Record<string, string> };
+      fields: string[];
+      note?: string;
+      matches: unknown[][];
     };
     expect(filterPayload.matches.length).toBeGreaterThan(0);
+    const milk = Object.entries(filterPayload.key.allergens).find(([, slug]) => slug === 'milk')?.[0];
+    const vegetarian = Object.entries(filterPayload.key.traits).find(([, slug]) => slug === 'vegetarian')?.[0];
+    const allergens = filterPayload.fields.indexOf('allergens');
+    const traits = filterPayload.fields.indexOf('traits');
     for (const match of filterPayload.matches) {
-      expect(match.allergens).not.toContain('milk');
-      expect(match.traits).toContain('vegetarian');
+      if (milk) expect((match[allergens] as number[]).map(String)).not.toContain(milk);
+      if (vegetarian) expect((match[traits] as number[]).map(String)).toContain(vegetarian);
     }
-    expect(filterPayload.warning).toMatch(/allergen/i);
+    expect(filterPayload.note).toMatch(/allergen/i);
+  });
+
+  it('takes a list of halls and an empty list of them', async () => {
+    mockFixtureFetch();
+
+    const one = (await client.callTool({
+      name: 'search_dishes',
+      arguments: { query: 'oatmeal', hall: ['bursley'] },
+    })) as {
+      isError?: boolean;
+      structuredContent?: { key: { halls: Record<string, string> }; matches: unknown[][]; fields: string[] };
+    };
+    expect(one.isError).toBeFalsy();
+    expect(Object.keys(one.structuredContent!.key.halls)).toEqual(['1']);
+
+    const two = (await client.callTool({
+      name: 'search_dishes',
+      arguments: { query: 'oatmeal', hall: ['bursley', 'markley'] },
+    })) as { structuredContent?: { key: { halls: Record<string, string> } } };
+    expect(Object.keys(two.structuredContent!.key.halls).sort()).toEqual(['1', '3']);
+
+    // An empty list is every hall, and a single hall may still be named on
+    // its own.
+    const all = (await client.callTool({
+      name: 'search_dishes',
+      arguments: { query: 'oatmeal', hall: [] },
+    })) as { structuredContent?: { key: { halls: Record<string, string> } } };
+    expect(Object.keys(all.structuredContent!.key.halls).length).toBeGreaterThan(2);
+
+    const single = (await client.callTool({
+      name: 'search_dishes',
+      arguments: { query: 'oatmeal', hall: 'bursley' },
+    })) as { structuredContent?: { key: { halls: Record<string, string> } } };
+    expect(Object.keys(single.structuredContent!.key.halls)).toEqual(['1']);
+  });
+
+  it('returns fifty rows by default and says how to see the rest', async () => {
+    mockFixtureFetch();
+    const result = (await client.callTool({
+      name: 'filter_dishes',
+      arguments: { hall: 'bursley' },
+    })) as { structuredContent?: { matches: unknown[][]; totalMatches: number; truncated: boolean; note?: string } };
+
+    expect(result.structuredContent!.totalMatches).toBeGreaterThan(50);
+    expect(result.structuredContent!.matches).toHaveLength(50);
+    expect(result.structuredContent!.truncated).toBe(true);
+    expect(result.structuredContent!.note).toMatch(/larger limit/);
   });
 
   it('calls get_hours, find_open_now and get_item_nutrition', async () => {

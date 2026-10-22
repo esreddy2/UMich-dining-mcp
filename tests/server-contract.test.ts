@@ -2,7 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Client, InMemoryTransport } from '@modelcontextprotocol/client';
 import { cache } from '../src/cache.js';
 import { createServer } from '../src/server.js';
-import { HALL_FIXTURES, mockFixtureFetch, readFixture } from './helpers.js';
+import { HALL_FIXTURES, fixtureResponse, mockFixtureFetch, readFixture } from './helpers.js';
 
 /**
  * The contract of the server: the tools it offers, the values it accepts,
@@ -26,6 +26,7 @@ const TOOL_NAMES = [
   'get_hours',
   'find_open_now',
   'get_item_nutrition',
+  'list_nutrition_fields',
 ];
 
 describe('the contract of the server', () => {
@@ -54,7 +55,7 @@ describe('the contract of the server', () => {
     await client.callTool({ name: 'list_locations', arguments: {} });
   }
 
-  it('offers the seven tools and the two resources', async () => {
+  it('offers the eight tools and the two resources', async () => {
     const tools = await client.listTools();
     expect(tools.tools.map((tool) => tool.name).sort()).toEqual([...TOOL_NAMES].sort());
 
@@ -73,6 +74,14 @@ describe('the contract of the server', () => {
       expect(tool.inputSchema, tool.name).toBeTruthy();
       expect(tool.outputSchema, tool.name).toBeTruthy();
       expect(tool.annotations?.readOnlyHint, tool.name).toBe(true);
+      // The annotations are declared, not left to the defaults.
+      expect(tool.annotations?.destructiveHint, tool.name).toBe(false);
+      expect(tool.annotations?.idempotentHint, tool.name).toBe(true);
+    }
+    // The one tool that reads a table of this server, not the world.
+    const nutrition = tools.tools.find((tool) => tool.name === 'list_nutrition_fields');
+    expect(nutrition?.annotations?.openWorldHint).toBe(false);
+    for (const tool of tools.tools.filter((entry) => entry.name !== 'list_nutrition_fields')) {
       expect(tool.annotations?.openWorldHint, tool.name).toBe(true);
     }
   });
@@ -100,13 +109,14 @@ describe('the contract of the server', () => {
       arguments: { hall: 'bursley', meal: 'Breakfast' },
     })) as ToolResult;
     const payload = result.structuredContent as {
-      meals: Record<string, unknown[]>;
+      key: { meals: Record<string, string> };
+      meals: { meal: number; stations: { station: number; items: unknown[] }[] }[];
       totalItems: number;
     };
-    expect(payload.meals['Breakfast']?.length).toBeGreaterThan(0);
-    expect(payload.meals['Lunch']).toEqual([]);
-    expect(payload.meals['Dinner']).toEqual([]);
-    const breakfast = payload.meals['Breakfast'] as { items: unknown[] }[];
+    expect(payload.meals).toHaveLength(1);
+    expect(payload.key.meals[String(payload.meals[0]!.meal)]).toBe('Breakfast');
+    const breakfast = payload.meals[0]!.stations;
+    expect(breakfast.length).toBeGreaterThan(0);
     expect(payload.totalItems).toBe(
       breakfast.reduce((sum, station) => sum + station.items.length, 0),
     );
@@ -209,8 +219,8 @@ describe('the contract of the server', () => {
     vi.stubGlobal('fetch', async (input: string | URL | Request): Promise<Response> => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
       if (url.includes('markley')) return new Response('down', { status: 503 });
-      const name = `${new URL(url).pathname.replace(/\/+$/, '').split('/').pop()}.html`;
-      return new Response(readFixture(name), { status: 200 });
+      const response = fixtureResponse(url);
+      return response ?? new Response('not found', { status: 404 });
     });
 
     const result = (await client.callTool({ name: 'list_locations', arguments: {} })) as ToolResult;
@@ -268,14 +278,19 @@ describe('the contract of the server', () => {
     })) as ToolResult;
     const searchPayload = search.structuredContent as {
       totalMatches: number;
-      matches: { name: string; hall: string; traits: string[]; allergens: string[] }[];
-      warning: string;
+      fields: string[];
+      key: { halls: Record<string, string>; meals: Record<string, string>; traits: Record<string, string> };
+      note?: string;
+      matches: unknown[][];
     };
+    const name = searchPayload.fields.indexOf('name');
+    const hall = searchPayload.fields.indexOf('hall');
     expect(searchPayload.totalMatches).toBeGreaterThan(0);
     for (const match of searchPayload.matches) {
-      expect(match.name.toLowerCase()).toContain('oatmeal');
+      expect(String(match[name]).toLowerCase()).toContain('oatmeal');
+      expect(Object.keys(searchPayload.key.halls)).toContain(String(match[hall]));
     }
-    expect(searchPayload.warning).toMatch(/allergen/i);
+    expect(searchPayload.note).toMatch(/allergen/i);
 
     const filter = (await client.callTool({
       name: 'filter_dishes',
@@ -283,11 +298,17 @@ describe('the contract of the server', () => {
     })) as ToolResult;
     const filterPayload = filter.structuredContent as {
       totalMatches: number;
-      matches: { allergens: string[]; traits: string[] }[];
+      fields: string[];
+      key: { allergens: Record<string, string>; traits: Record<string, string> };
+      matches: unknown[][];
     };
+    const milk = Object.entries(filterPayload.key.allergens).find(([, slug]) => slug === 'milk')?.[0];
+    const vegetarian = Object.entries(filterPayload.key.traits).find(([, slug]) => slug === 'vegetarian')?.[0];
+    const allergens = filterPayload.fields.indexOf('allergens');
+    const traits = filterPayload.fields.indexOf('traits');
     for (const match of filterPayload.matches) {
-      expect(match.allergens).not.toContain('milk');
-      expect(match.traits).toContain('vegetarian');
+      if (milk) expect((match[allergens] as number[]).map(String)).not.toContain(milk);
+      if (vegetarian) expect((match[traits] as number[]).map(String)).toContain(vegetarian);
     }
   });
 
@@ -312,6 +333,180 @@ describe('the contract of the server', () => {
     expect(payload.nutrition.servingSize).toBe('Cups (253g)');
     expect(payload.warning).toMatch(/allergen/i);
   });
+
+  it('returns the coded rows with a key that lists only what is used', async () => {
+    const result = (await client.callTool({
+      name: 'search_dishes',
+      arguments: { query: 'oatmeal', hall: 'bursley' },
+    })) as ToolResult;
+    const payload = result.structuredContent as {
+      key: Record<string, Record<string, string>>;
+      units: Record<string, string>;
+      fields: string[];
+      date: string;
+      matches: unknown[][];
+    };
+
+    const at = (row: unknown[], field: string): unknown => row[payload.fields.indexOf(field)];
+    const hall = payload.fields.indexOf('hall');
+    const meal = payload.fields.indexOf('meal');
+    const station = payload.fields.indexOf('station');
+    const traits = payload.fields.indexOf('traits');
+    const allergens = payload.fields.indexOf('allergens');
+
+    expect(payload.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(payload.matches.length).toBeGreaterThan(0);
+    for (const row of payload.matches) {
+      expect(row).toHaveLength(payload.fields.length);
+      expect(row[hall]).toBe(1);
+      expect(row[meal]).toBeGreaterThanOrEqual(1);
+      expect(row[meal]).toBeLessThanOrEqual(4);
+      expect(row[station]).toBeGreaterThan(0);
+      const carbon = at(row, 'carbonFootprint') as number | null;
+      expect(carbon === null || (carbon >= 1 && carbon <= 3)).toBe(true);
+      const density = at(row, 'mhealthyTier') as number | null;
+      expect(density === null || (density >= 1 && density <= 5)).toBe(true);
+      const grams = at(row, 'servingSizeGrams') as number | null;
+      expect(grams === null || grams > 0).toBe(true);
+      // The codes resolve through the key.
+      expect(payload.key.halls?.[String(row[hall])]).toBe('bursley');
+      expect(payload.key.meals?.[String(row[meal])]).toBeTruthy();
+      expect(payload.key.stations?.[String(row[station])]).toBeTruthy();
+    }
+    // The key lists only the vocabularies the rows use.
+    for (const row of payload.matches) {
+      for (const trait of row[traits] as number[]) {
+        expect(payload.key.traits?.[String(trait)]).toBeTruthy();
+      }
+      for (const allergen of row[allergens] as number[]) {
+        expect(payload.key.allergens?.[String(allergen)]).toBeTruthy();
+      }
+    }
+    expect(payload.units.calories).toBe('kcal');
+    // The sodium is not in the default row: it is asked for like any other.
+    expect(payload.units.sodium).toBeUndefined();
+    for (const row of payload.matches) {
+      expect(row).not.toHaveProperty('sodium');
+    }
+  });
+
+  it('returns the nutrients it was asked for and their units', async () => {
+    const result = (await client.callTool({
+      name: 'filter_dishes',
+      arguments: { hall: 'bursley', include_nutrients: ['protein', 'Iron'] },
+    })) as ToolResult;
+    const payload = result.structuredContent as {
+      units: Record<string, string>;
+      fields: string[];
+      matches: unknown[][];
+    };
+    expect(payload.units.protein).toBe('g');
+    expect(payload.units.iron).toBe('mg');
+    expect(payload.fields).toContain('protein');
+    expect(payload.fields).toContain('iron');
+    expect(payload.matches.length).toBeGreaterThan(0);
+    for (const row of payload.matches) {
+      expect(row).toHaveLength(payload.fields.length);
+    }
+  });
+
+  it('returns the nutrients the filter used when none are asked for', async () => {
+    const result = (await client.callTool({
+      name: 'filter_dishes',
+      arguments: { hall: 'bursley', nutrients: { protein: { min: 1 } } },
+    })) as ToolResult;
+    const payload = result.structuredContent as {
+      units: Record<string, string>;
+      fields: string[];
+      matches: unknown[][];
+    };
+    expect(payload.units.protein).toBe('g');
+    expect(payload.fields).toContain('protein');
+    expect(payload.matches.length).toBeGreaterThan(0);
+    for (const row of payload.matches) {
+      expect(row).toHaveLength(payload.fields.length);
+    }
+  });
+
+  it('returns the micronutrient the filter used when none are asked for', async () => {
+    const result = (await client.callTool({
+      name: 'filter_dishes',
+      arguments: { hall: 'bursley', nutrients: { Iron: { min: 1, unit: 'mg' } } },
+    })) as ToolResult;
+    const payload = result.structuredContent as {
+      units: Record<string, string>;
+      fields: string[];
+      matches: unknown[][];
+    };
+    expect(payload.units.iron).toBe('mg');
+    expect(payload.fields).toContain('iron');
+    expect(payload.matches.length).toBeGreaterThan(0);
+    for (const row of payload.matches) {
+      expect(row).toHaveLength(payload.fields.length);
+    }
+  });
+
+  it('returns nothing beyond the calories and the sodium without a filter', async () => {
+    const result = (await client.callTool({
+      name: 'filter_dishes',
+      arguments: { hall: 'bursley' },
+    })) as ToolResult;
+    const payload = result.structuredContent as {
+      units: Record<string, string>;
+      fields: string[];
+      matches: unknown[][];
+    };
+    expect(Object.keys(payload.units).sort()).toEqual(['calories']);
+    expect(payload.fields).not.toContain('protein');
+    expect(payload.fields).not.toContain('iron');
+    expect(payload.matches.length).toBeGreaterThan(0);
+  });
+
+  it('rejects a nutrient it does not know and names the tool that lists them', async () => {
+    const result = (await client.callTool({
+      name: 'filter_dishes',
+      arguments: { hall: 'bursley', include_nutrients: ['vitaminZ'] },
+    })) as ToolResult;
+    expect(result.isError).toBe(true);
+    expect(JSON.stringify(result.content)).toMatch(/list_nutrition_fields/);
+  });
+
+  it('rejects a threshold in a unit the nutrient cannot be expressed in', async () => {
+    const result = (await client.callTool({
+      name: 'filter_dishes',
+      arguments: { hall: 'bursley', nutrients: { protein: { min: 1, unit: 'kg' } } },
+    })) as ToolResult;
+    expect(result.isError).toBe(true);
+    expect(JSON.stringify(result.content)).toMatch(/protein/);
+  });
+
+  it('reports the halls it could not read and keeps the others', async () => {
+    const result = (await client.callTool({
+      name: 'filter_dishes',
+      arguments: { hall: 'bursley' },
+    })) as ToolResult;
+    const payload = result.structuredContent as { failures: unknown[]; matches: unknown[] };
+    expect(Array.isArray(payload.failures)).toBe(true);
+    expect(Array.isArray(payload.matches)).toBe(true);
+  });
+
+  it('finds the halls that are open at a given time of day', async () => {
+    const result = (await client.callTool({
+      name: 'find_open_now',
+      arguments: { at: '12:00' },
+    })) as ToolResult;
+    const payload = result.structuredContent as { date: string; at: string | null; open: unknown[]; closed: unknown[] };
+    expect(payload.at).toBe('12:00');
+    expect(payload.open.length + payload.closed.length).toBe(10);
+  });
+
+  it('refuses a time of day it cannot read', async () => {
+    const result = (await client.callTool({
+      name: 'find_open_now',
+      arguments: { at: 'half past twelve' },
+    })) as ToolResult;
+    expect(result.isError).toBe(true);
+  });
 });
 
 describe('the resources of the server', () => {
@@ -325,11 +520,12 @@ describe('the resources of the server', () => {
     await client.connect(clientTransport);
   });
 
-  it('lists the ten halls with the path of their page', async () => {
+  it('lists the ten halls with the path of their page and their code', async () => {
     const resource = await client.readResource({ uri: 'umich://dining-halls' });
     const first = resource.contents[0] as { text?: string; mimeType?: string };
     expect(first.mimeType).toBe('application/json');
     const registry = JSON.parse(first.text ?? '[]') as {
+      code: number;
       id: string;
       name: string;
       path: string;
@@ -341,22 +537,23 @@ describe('the resources of the server', () => {
       expect(hall.path, hall.id).toMatch(/^dining-halls\//);
       expect(hall.url, hall.id).toBe(`https://dining.umich.edu/menus-locations/${hall.path}/`);
     }
+    expect(registry.map((hall) => hall.code)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   });
 
-  it('lists the allergens and the traits of the site', async () => {
+  it('lists the allergens and the traits of the site with their codes', async () => {
     const resource = await client.readResource({ uri: 'umich://taxonomy' });
     const first = resource.contents[0] as { text?: string };
     const taxonomy = JSON.parse(first.text ?? '{}') as {
-      allergens: Record<string, string>;
-      traits: Record<string, string>;
+      allergens: { code: number; slug: string; label: string }[];
+      traits: { code: number | null; slug: string; label: string; boolean: boolean }[];
       booleanTraits: string[];
-      mhealthyTiers: string[];
-      carbonTiers: string[];
+      mhealthyTiers: { code: number; slug: string; label: string }[];
+      carbonTiers: { code: number; slug: string; label: string }[];
       implications: Record<string, string[]>;
       caveat: string;
     };
-    expect(Object.keys(taxonomy.allergens)).toHaveLength(15);
-    expect(Object.keys(taxonomy.traits)).toHaveLength(14);
+    expect(taxonomy.allergens).toHaveLength(15);
+    expect(taxonomy.traits).toHaveLength(14);
     expect(taxonomy.booleanTraits).toEqual([
       'glutenfree',
       'halal',
@@ -369,5 +566,21 @@ describe('the resources of the server', () => {
     expect(taxonomy.carbonTiers).toHaveLength(3);
     expect(taxonomy.implications).toEqual({ vegan: ['vegetarian'] });
     expect(taxonomy.caveat).toMatch(/allergen/i);
+
+    // The codes are frozen: the allergens are 1..15 in the order of the list.
+    expect(taxonomy.allergens.map((allergen) => allergen.code)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+    ]);
+    // The six boolean traits are 1..6; the tiers have no trait code.
+    const booleanCodes = taxonomy.traits
+      .filter((trait) => trait.boolean)
+      .map((trait) => trait.code);
+    expect(booleanCodes).toEqual([1, 2, 3, 4, 5, 6]);
+    for (const trait of taxonomy.traits.filter((entry) => !entry.boolean)) {
+      expect(trait.code, trait.slug).toBeNull();
+    }
+    // The tiers carry their own fixed scale.
+    expect(taxonomy.mhealthyTiers.map((tier) => tier.code)).toEqual([1, 2, 3, 4, 5]);
+    expect(taxonomy.carbonTiers.map((tier) => tier.code)).toEqual([1, 2, 3]);
   });
 });

@@ -146,6 +146,53 @@ function fixtureForUrl(url: string): string | null {
   }
 }
 
+/**
+ * Write the date the page declares.
+ *
+ * The site says which day its menu is about in `h2.menuTitle span.date`, and
+ * the server refuses a page that declares another day. A mock that served the
+ * captured date whatever was asked for would trip that guard in every test,
+ * so the mock declares the day it was asked for.
+ */
+export function withDeclaredDate(html: string, date: string): string {
+  const parsed = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!parsed) return html;
+  const [, year, month, day] = parsed;
+  const written = new Date(
+    Date.UTC(Number(year), Number(month) - 1, Number(day)),
+  ).toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+  return html.replace(
+    /(<span class="date">)[^<]*(<\/span>)/,
+    (_match, open: string, close: string) => `${open}${written}${close}`,
+  );
+}
+
+/** The day the given URL asks for, or null when it asks for none. */
+export function requestedDate(url: string): string | null {
+  const date = new URL(url).searchParams.get('menuDate');
+  return date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null;
+}
+
+/**
+ * The response a menu URL answers with.
+ *
+ * The fixture declares the day that was asked for, so the guard that refuses
+ * a page about another day stays live in the tests.
+ */
+export function fixtureResponse(url: string): Response | null {
+  const body = fixtureForUrl(url);
+  if (body === null) return null;
+  const date = requestedDate(url);
+  const html = date === null ? body : withDeclaredDate(body, date);
+  return new Response(html, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+}
+
 export function mockFixtureFetch(): FetchMock {
   const calls: string[] = [];
   vi.stubGlobal('fetch', async (input: string | URL | Request): Promise<Response> => {
@@ -153,7 +200,42 @@ export function mockFixtureFetch(): FetchMock {
     calls.push(url);
     const body = fixtureForUrl(url);
     if (body === null) return new Response('not found', { status: 404 });
-    return new Response(body, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    const date = requestedDate(url);
+    const html = date === null ? body : withDeclaredDate(body, date);
+    return new Response(html, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+  });
+  return { calls };
+}
+
+/**
+ * Answer the requests with a body that depends on the day asked for.
+ *
+ * The menu URL carries the day in its `menuDate` parameter, so a range query
+ * can be answered with a different page for every day. A day with no entry in
+ * the map is answered with an empty menu.
+ */
+export function mockDatedFetch(
+  bodies: Record<string, string>,
+  fallback?: string,
+): FetchMock {
+  const calls: string[] = [];
+  vi.stubGlobal('fetch', async (input: string | URL | Request): Promise<Response> => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    calls.push(url);
+    const parsed = new URL(url);
+    if (parsed.pathname.replace(/^\/+/, '') === 'menus-locations/regularhours') {
+      return new Response(readFixture('regularhours.html'), { status: 200 });
+    }
+    const date = parsed.searchParams.get('menuDate') ?? '';
+    const body = bodies[date] ?? fallback;
+    if (body === undefined) {
+      return new Response(
+        '<html><body><div id="mdining-items"></div></body></html>',
+        { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } },
+      );
+    }
+    const html = date ? withDeclaredDate(body, date) : body;
+    return new Response(html, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   });
   return { calls };
 }

@@ -25,7 +25,16 @@ export function parseTodaysHours($: CheerioAPI): ServicePeriod[] {
     const item = $(element);
     const label = normalizeText(item.find('span.calhours-title').first().text());
     const times = normalizeText(item.find('span.calhours-times').first().text());
-    if (!label && !times) return;
+    if (!label && !times) {
+      // The site states a closed day with a bare <li>Closed</li>, with no
+      // spans in it. Dropping it would say "no periods" where the site says
+      // "closed", and contradict the weekly block of the same response.
+      const own = normalizeText(item.text());
+      if (/^closed$/i.test(own)) {
+        periods.push({ label: 'Closed', times: 'Closed', closed: true });
+      }
+      return;
+    }
     periods.push({ label, times, closed: !times || /^closed$/i.test(times) });
   });
   return periods;
@@ -120,9 +129,9 @@ function matchHallByName(name: string): HallId | null {
  * time (cafes, markets and the grill sit in tables of their own and come and
  * go), and a location may share a `<tbody>` with the one before it.
  */
-export function parseRegularHours(html: string): Map<HallId, RegularHours> {
+export function parseRegularHours(html: string): Record<HallId, RegularHours> {
   const $ = load(html);
-  const result = new Map<HallId, RegularHours>();
+  const result: Partial<Record<HallId, RegularHours>> = {};
 
   $('table').each((_, table) => {
     let current: { id: HallId; name: string; url: string | null; weekly: WeeklyHours[] } | null = null;
@@ -135,7 +144,7 @@ export function parseRegularHours(html: string): Map<HallId, RegularHours> {
         const id = (href ? hallIdFromUrl(href) : null) ?? matchHallByName(name);
         if (id) {
           current = { id, name, url: href, weekly: [] };
-          result.set(id, { hall: id, name, url: href, weekly: current.weekly });
+          result[id] = { hall: id, name, url: href, weekly: current.weekly };
         } else {
           current = null;
         }
@@ -153,10 +162,10 @@ export function parseRegularHours(html: string): Map<HallId, RegularHours> {
     });
   });
 
-  if (result.size === 0) {
+  if (Object.keys(result).length === 0) {
     throw new HoursParseError('The regular hours page contains no dining hall tables; the layout has probably changed.');
   }
-  return result;
+  return result as Record<HallId, RegularHours>;
 }
 
 /** Parse a time range such as "9:00 am - 10:30 am" into minutes since midnight. */

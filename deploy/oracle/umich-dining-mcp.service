@@ -1,0 +1,40 @@
+[Unit]
+Description=UMich Dining public MCP HTTP server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=umichmcp
+Group=umichmcp
+WorkingDirectory=/opt/umich-dining-mcp/current
+Environment=NODE_ENV=production
+EnvironmentFile=/etc/umich-dining-mcp/server.env
+ExecStart=/opt/umich-dining-mcp/node/bin/node /opt/umich-dining-mcp/current/dist/http-server.js
+Restart=on-failure
+RestartSec=8
+TimeoutStopSec=30
+# The persistent cache lives here. StateDirectory is exempt from
+# ProtectSystem=strict, so the directory stays writable while the rest of the
+# file system does not.
+StateDirectory=umich-dining-mcp
+StateDirectoryMode=0700
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictSUIDSGID=true
+LockPersonality=true
+SystemCallArchitectures=native
+MemoryMax=384M
+CPUQuota=100%
+TasksMax=64
+LimitNOFILE=2048
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
