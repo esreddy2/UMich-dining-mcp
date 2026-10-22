@@ -90,20 +90,7 @@ const allergenSchema = z.enum(ALLERGEN_SLUGS as [string, ...string[]]);
 const traitSchema = z.enum(TRAIT_SLUGS as [string, ...string[]]);
 const carbonSchema = z.number().int().min(1).max(3);
 
-const nutritionSchema = z.object({
-  servingSize: z.string().nullable(),
-  calories: z.number().nullable(),
-  totalFat: z.string().nullable(),
-  saturatedFat: z.string().nullable(),
-  transFat: z.string().nullable(),
-  cholesterol: z.string().nullable(),
-  sodium: z.string().nullable(),
-  totalCarbohydrate: z.string().nullable(),
-  dietaryFiber: z.string().nullable(),
-  sugars: z.string().nullable(),
-  protein: z.string().nullable(),
-  micronutrients: z.record(z.string(), z.string()),
-});
+
 
 const servicePeriodSchema = z.object({
   label: z.string(),

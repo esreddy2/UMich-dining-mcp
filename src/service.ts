@@ -13,8 +13,6 @@ import { ALLERGEN_REMINDER } from './taxonomy.js';
 import {
   MICRONUTRIENT_SPECS,
   NUTRIENT_SPECS,
-  deriveMicronutrient,
-  findMicronutrientValue,
   micronutrientAmount,
   micronutrientSpec,
   nutrientValueInUnit,
@@ -1400,17 +1398,6 @@ function resolveDish(
  * The micronutrients of a panel, as the published percent and the amount it
  * stands for.
  */
-function micronutrientAmounts(
-  nutrition: Nutrition | null | undefined,
-): Record<string, number | null> {
-  const amounts: Record<string, number | null> = {};
-  for (const spec of MICRONUTRIENT_SPECS) {
-    const raw = nutrition ? findMicronutrientValue(nutrition.micronutrients, spec.name) : null;
-    const derived = deriveMicronutrient(spec.name, raw);
-    amounts[spec.name] = derived?.amount ?? null;
-  }
-  return amounts;
-}
 
 /**
  * The full nutrition panel of a single dish.
