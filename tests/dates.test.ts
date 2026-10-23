@@ -90,7 +90,7 @@ describe('date handling', () => {
       new Response(withDeclaredDate(readFixture('bursley.html'), today), { status: 200 }),
     );
 
-    const page = await getMenu('bursley', today);
+    const page = await getMenu('bursley', today, 'Lunch');
     expect(page.menu.renderedDate).toBe(today);
     expect(countItems(page.menu.meals)).toBeGreaterThan(0);
   });
@@ -105,7 +105,7 @@ describe('date handling', () => {
       new Response(withDatepicker(today, withoutTitle), { status: 200 }),
     );
 
-    const page = await getMenu('bursley', today);
+    const page = await getMenu('bursley', today, 'Lunch');
     expect(page.menu.renderedDate).toBe(today);
   });
 
