@@ -61,6 +61,8 @@ export interface Config {
   cacheMaxSizeMb: number;
   /** How often the persistent cache is pruned, in milliseconds. */
   cachePruneIntervalMs: number;
+  /** Fraction of TTL after which a fresh entry is revalidated in the background. */
+  cacheRefreshThreshold: number;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -89,6 +91,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     cacheMaxAgeDays: intFromEnv(env, 'UMICH_DINING_CACHE_MAX_AGE_DAYS', 30),
     cacheMaxSizeMb: intFromEnv(env, 'UMICH_DINING_CACHE_MAX_SIZE_MB', 200),
     cachePruneIntervalMs: intFromEnv(env, 'UMICH_DINING_CACHE_PRUNE_INTERVAL_MS', 60 * MINUTE),
+    cacheRefreshThreshold: (() => {
+      const raw = env['UMICH_DINING_CACHE_REFRESH_THRESHOLD'];
+      if (raw === undefined || raw.trim() === '') return 0.6;
+      const value = Number.parseFloat(raw);
+      return Number.isFinite(value) && value >= 0 && value <= 1 ? value : 0.6;
+    })(),
   };
 }
 

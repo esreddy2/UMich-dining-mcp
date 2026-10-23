@@ -710,7 +710,7 @@ export function menuGroups(page: HallPage): { meal: string; stations: { name: st
 }
 
 /** The service periods of a hall for the requested day, plus the weekly schedule. */
-export async function getHours(hallId?: HallId, date?: string): Promise<{
+export async function getHours(halls?: HallId | HallId[], date?: string): Promise<{
   date: string;
   weekday: string;
   weekly: Record<string, { days: string[]; periods: ServicePeriod[]; closed?: boolean }[]>;
@@ -721,7 +721,8 @@ export async function getHours(hallId?: HallId, date?: string): Promise<{
   const today = todayIn();
   const requested = date ?? today;
   validateDate(requested, today);
-  const halls = hallId ? [getHallDefinition(hallId)] : HALLS;
+  const requestedIds = halls === undefined ? [] : (Array.isArray(halls) ? halls : [halls]);
+  const hallDefs = requestedIds.length > 0 ? HALLS.filter((h) => requestedIds.includes(h.id)) : [...HALLS];
   const [regular] = await Promise.all([loadRegularHours()]);
   const deadline = new Deadline();
 
@@ -730,7 +731,7 @@ export async function getHours(hallId?: HallId, date?: string): Promise<{
   const weekly: Record<string, { days: string[]; periods: ServicePeriod[]; closed?: boolean }[]> = {};
   const weeklyIdByHall = new Map<HallId, string | null>();
   const idByKey = new Map<string, string>();
-  for (const hall of halls) {
+  for (const hall of hallDefs) {
     const raw = regular.get(hall.id)?.weekly ?? null;
     if (!raw) {
       weeklyIdByHall.set(hall.id, null);
@@ -755,7 +756,7 @@ export async function getHours(hallId?: HallId, date?: string): Promise<{
 
   // One hall that cannot be read does not lose the other nine.
   const settled = await Promise.allSettled(
-    halls.map(async (hall): Promise<HallHours> => {
+    hallDefs.map(async (hall): Promise<HallHours> => {
       if (deadline.expired) throw new ServiceError(deadline.message);
       // The hours are read even when the menu cannot be parsed.
       const page = await loadHallPage(hall.id, requested, today, { menuOptional: true, deadline });
@@ -781,7 +782,7 @@ export async function getHours(hallId?: HallId, date?: string): Promise<{
       resultHalls.push(entry.value);
       return;
     }
-    const hall = halls[index]!;
+    const hall = hallDefs[index]!;
     failures.push({
       hall: hall.id,
       hallName: hall.name,
