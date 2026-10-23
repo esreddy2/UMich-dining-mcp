@@ -9,6 +9,7 @@
  */
 
 import { diskCache, type DiskCache } from './disk-cache.js';
+import { config } from './config.js';
 
 export interface Cached<T> {
   value: T;
@@ -99,17 +100,71 @@ export class TtlCache {
     options: { force?: boolean } = {},
   ): Promise<Cached<T>> {
     const now = Date.now();
-    const existing = this.entries.get(key) as Entry<T> | undefined;
+
+    // Cold-start hydration: if no memory entry, check disk first so an expired
+    // disk entry is available as a fallback during an upstream outage.
+    let existing = this.entries.get(key) as Entry<T> | undefined;
+    if (!existing && this.disk && !options.force) {
+      const diskEntry = await this.disk.get(key);
+      if (diskEntry) {
+        existing = { value: diskEntry.value as T, storedAt: diskEntry.storedAt, expiresAt: diskEntry.expiresAt };
+        this.entries.set(key, existing);
+      }
+    }
+    if (options.force) {
+      existing = this.entries.get(key) as Entry<T> | undefined;
+    }
+
+    // Fresh entry: serve it, and trigger a background revalidation once past
+    // the refresh threshold so the value is already fresh by the time TTL ends.
     if (existing && existing.expiresAt > now && !options.force) {
+      const refreshAt = existing.storedAt + (existing.expiresAt - existing.storedAt) * config.cacheRefreshThreshold;
+      if (now > refreshAt) {
+        this.revalidate(key, ttlMs, loader);
+      }
       return { value: existing.value, stale: false, storedAt: existing.storedAt, cached: true };
     }
 
-    // Stale-while-revalidate: serve stale immediately and refresh in background.
+    // Expired entry (or hydrated expired disk entry): try a synchronous fetch.
     if (existing && !options.force) {
-      this.revalidate(key, ttlMs, loader);
-      return { value: (existing).value, stale: true, storedAt: (existing).storedAt, cached: true };
+      const pending = this.inFlight.get(key) as Promise<T> | undefined;
+      if (pending) {
+        try {
+          await pending;
+          const entry = this.entries.get(key) as Entry<T> | undefined;
+          if (entry) {
+            return { value: entry.value, stale: false, storedAt: entry.storedAt, cached: true };
+          }
+        } catch {
+          // Fetch failed - fall through to stale fallback.
+        }
+        return { value: existing.value, stale: true, storedAt: existing.storedAt, cached: true };
+      }
+
+      const load = (async (): Promise<T> => {
+        try {
+          const value = await loader();
+          const storedAt = Date.now();
+          this.entries.set(key, { value, storedAt, expiresAt: storedAt + ttlMs });
+          this.writeToDisk(key, value, ttlMs, storedAt);
+          return value;
+        } finally {
+          this.inFlight.delete(key);
+        }
+      })();
+      this.inFlight.set(key, load);
+
+      try {
+        const value = await load;
+        return { value, stale: false, storedAt: Date.now(), cached: false };
+      } catch {
+        existing.expiresAt = Date.now() + 60_000;
+        this.entries.set(key, existing);
+        return { value: existing.value, stale: true, storedAt: existing.storedAt, cached: true };
+      }
     }
 
+    // No entry (or force): load from disk or network (existing behavior).
     const pending = this.inFlight.get(key) as Promise<T> | undefined;
     if (pending) {
       const value = await pending;
@@ -117,9 +172,6 @@ export class TtlCache {
       return { value, stale: false, storedAt: entry?.storedAt ?? now, cached: true };
     }
 
-    // Register the in-flight promise before the disk read, so concurrent
-    // callers share one load instead of each reading the disk. The disk
-    // lookup happens inside the load: exactly one caller performs it.
     let diskEntry: { value: unknown; storedAt: number; expiresAt: number } | null = null;
     const load = (async (): Promise<T> => {
       try {
@@ -151,7 +203,6 @@ export class TtlCache {
     } catch (error) {
       const entry = diskEntry as { value: unknown; storedAt: number; expiresAt: number } | null;
       if (entry) {
-        // The expired disk entry is the last resort.
         this.entries.set(key, {
           value: entry.value,
           storedAt: entry.storedAt,

@@ -446,8 +446,9 @@ export function createServer(): McpServer {
         'include_nutrients (a get_menu row never carries carbonFootprint). traits are codes 1-6 (glutenfree, ' +
         'halal, kosher, spicy, vegan, vegetarian); allergens are codes; read the key block. mhealthyTier 1-5. ' +
         'Calories kcal. With no meal, the meal being served now is returned (or the next one if closed); the ' +
-        'response says which and why. Date defaults to today; site publishes today-3..+14. stale means an ' +
-        'expired cache entry; asOf data age. Allergens advisory.',
+        'response says which and why. Date defaults to today; site publishes today-3..+14. stale means the ' +
+        'data is from cache and may be slightly old, but is still the best available; asOf is the age. ' +
+        'Re-call only if you need guaranteed-fresh data. Allergens advisory.',
       inputSchema: z.strictObject({
         hall: hallIdSchema.describe('The dining hall to read.'),
         date: dateSchema.optional().describe('The day to read. Defaults to today.'),
@@ -536,8 +537,11 @@ export function createServer(): McpServer {
         'substring. Rows are arrays: [hall, meal, station, name, traits, allergens, mhealthyTier] plus ' +
         'carbonFootprint when max_carbon or sort_by carbon, then calories, servingSize, servingSizeGrams, ' +
         'dates in a range, then nutrients named by include_nutrients. traits are codes 1-6; allergens are ' +
-        'codes; read the key. Response: matches rows, key resolves codes, units, filter echo, flags coverage, ' +
-        'note prose. stale means expired cache entry; asOf data age. Allergens advisory.',
+        'codes; read the key. Station codes in each row resolve via key.stations. Every row already ' +
+        'includes calories, servingSize, and servingSizeGrams. Use include_nutrients to get full nutrition ' +
+        'data in the same call - no need to call get_item_nutrition per dish. stale means the data is from ' +
+        'cache and may be slightly old, but is still the best available; asOf is the age. Re-call only if ' +
+        'you need guaranteed-fresh data. Allergens advisory.',
       inputSchema: z.strictObject({
         exclude_allergens: z
           .array(allergenSchema)
@@ -748,12 +752,14 @@ export function createServer(): McpServer {
       title: 'Get dining hall hours',
       description:
         "Get the service periods published for a dining hall on the requested day, plus the regular " +
-        "weekly schedule. today is the day's published service periods and regular is the weekly schedule. " +
-        "A hall that cannot be read is reported in the failures and the other halls are still returned. " +
-        "The response carries the weekday name of the requested date. stale means a page was served from " +
-        "an expired cache entry; asOf is the age of the data.",
+         "weekly schedule. Accepts one hall, a list, or none for all (like filter_dishes). " +
+         "today is the day's published service periods and regular is the weekly schedule. " +
+         "A hall that cannot be read is reported in the failures and the other halls are still returned. " +
+         "The response carries the weekday name of the requested date. stale means the data is from " +
+         "cache and may be slightly old, but is still the best available; asOf is the age. " +
+         "Re-call only if you need guaranteed-fresh data.",
       inputSchema: z.strictObject({
-        hall: hallIdSchema.optional().describe('One hall, or every hall.'),
+        hall: hallsSchema.describe('Halls: one, a list, or none for all.'),
         date: dateSchema.optional().describe('The day to read. Defaults to today.'),
       }),
       outputSchema: getHoursOutput,
@@ -761,7 +767,7 @@ export function createServer(): McpServer {
     },
     async (args) => {
       try {
-        const { date, weekday, weekly, halls, failures, asOf } = await getHours(args.hall, args.date);
+        const { date, weekday, weekly, halls, failures, asOf } = await getHours(hallList(args.hall), args.date);
         return ok({ date, weekday, weekly, halls, failures, asOf });
       } catch (error) {
         return fail(error);
@@ -818,7 +824,8 @@ export function createServer(): McpServer {
         "Get the full nutrition panel of one dish. Name matched case-insensitively; exact match wins, " +
         "else unique substring. Dish row uses the same coded layout as the sweep tools. Panel values are " +
         "numbers with one units map; micronutrient amount is the derived amount, with the published percent " +
-        "behind it. asOf data age. Allergens advisory.",
+        "behind it. asOf data age. Allergens advisory. Use this only when you need the full panel for a " +
+        "single dish. For multiple dishes, use filter_dishes with include_nutrients instead.",
       inputSchema: z.strictObject({
         hall: hallIdSchema.describe('The dining hall to read.'),
         item: z.string().min(1).describe('The dish name.'),

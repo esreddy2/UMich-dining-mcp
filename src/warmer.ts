@@ -12,7 +12,7 @@ import type { HallId } from './types.js';
  * the long-lived HTTP mode; a one-shot stdio client starts no background job.
  */
 
-const TODAY_INTERVAL_MS = 30 * 60 * 1000;
+const TODAY_INTERVAL_MS = 10 * 60 * 1000;
 const FUTURE_INTERVAL_MS = 24 * 60 * 60 * 1000;
 /**
  * The gap between the future days of a cold start.
