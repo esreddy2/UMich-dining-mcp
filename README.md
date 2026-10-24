@@ -311,6 +311,35 @@ implies another (halal does not imply vegetarian, and neither does kosher).
   agent and a headless browser both get 403. It is not the server's real identity, which is
   why it is configurable.
 
+
+## Occupancy
+
+`get_dining_occupancy` reports real-time fullness for the halls that carry
+sensors (Bursley, East Quad, South Quad, Mosher-Jordan, Twigs at Oxford):
+
+```json
+{ "hall": "bursley" }
+```
+
+It returns the current count, daily patron flow, total capacity, percent full,
+and the time of the reading. A hall with no sensor is simply omitted.
+
+## Short forms
+
+Hall names, nutrients, and traits accept short, case-insensitive aliases:
+
+- Halls: `mojo`, `south`, `east`, `lawyers`, `cook`, `twigs`, `wovlerine`, ...
+- Nutrients: `cals`, `kcals`, `carbs`, `fiber`, `protein`/`prot`, `na`/`salt`, ...
+- Traits: `gf`, `veg`.
+
+Descriptions are unchanged; the server resolves the alias before validating.
+
+## Data source
+
+Menus, hours, locations, nutrition, and occupancy are read from the U-M dining
+mobile API, with the public site scraper retained as a fallback. Answers are
+still read live and cached for a few minutes.
+
 ## Contributing
 
 Pull requests are welcome. The test suite, the fixtures and the release process are

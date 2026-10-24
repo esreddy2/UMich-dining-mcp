@@ -1,6 +1,6 @@
 # The tool reference
 
-Eight tools and two resources. Every tool is read-only and reaches the dining site of the
+Nine tools and two resources. Every tool is read-only and reaches the dining site of the
 University of Michigan.
 
 ## The tools at a glance
@@ -14,6 +14,7 @@ University of Michigan.
 | `get_hours` | The service periods of a day and the regular weekly schedule. |
 | `find_open_now` | Which halls are serving at a given time. |
 | `get_item_nutrition` | The nutrition panel of a single dish. |
+| `get_dining_occupancy` | Real-time occupancy for monitored dining halls. |
 
 ## The response contract
 
