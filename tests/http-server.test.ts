@@ -81,7 +81,7 @@ describe('public HTTP transport', () => {
     try {
       await client.connect(transport);
       const tools = await client.listTools();
-      expect(tools.tools).toHaveLength(7);
+      expect(tools.tools).toHaveLength(8);
       expect(tools.tools.map((tool) => tool.name)).toContain('get_menu');
       const r = await client.readResource({ uri: 'umich://taxonomy' });
       expect(JSON.stringify(r.contents)).toContain('allergen');

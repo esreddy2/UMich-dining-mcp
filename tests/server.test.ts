@@ -18,6 +18,7 @@ const TOOL_NAMES = [
   'find_open_now',
   'get_item_nutrition',
   'list_nutrition_fields',
+  'get_dining_occupancy',
 ];
 
 describe('server', () => {

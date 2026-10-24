@@ -16,6 +16,7 @@ import {
   ServiceError,
   filterDishes,
   findOpenNow,
+  getDiningOccupancy,
   getHours,
   getItemNutrition,
   getMenu,
@@ -257,6 +258,21 @@ const findOpenNowOutput = z.object({
   asOf: z.string().optional(),
 });
 
+const diningOccupancyOutput = z.object({
+  observedAt: z.string(),
+  readings: z.array(
+    z.object({
+      hall: hallIdSchema,
+      name: z.string(),
+      current: z.number().nullable(),
+      patronFlow: z.number().nullable(),
+      total: z.number().nullable(),
+      percent: z.number().nullable(),
+      error: z.string().nullable(),
+    }),
+  ),
+});
+
 const itemNutritionOutput = z.object({
   key: keySchema,
   units: z.record(z.string(), z.string()).optional(),
@@ -441,14 +457,10 @@ export function createServer(): McpServer {
     {
       title: 'Get a dining hall menu',
       description:
-        'Get the menu of one dining hall: meals, stations and dishes. Dish rows are arrays: [name, traits, ' +
-        'allergens, mhealthyTier, calories, servingSize, servingSizeGrams] plus nutrients named by ' +
-        'include_nutrients (a get_menu row never carries carbonFootprint). traits are codes 1-6 (glutenfree, ' +
-        'halal, kosher, spicy, vegan, vegetarian); allergens are codes; read the key block. mhealthyTier 1-5. ' +
-        'Calories kcal. With no meal, the meal being served now is returned (or the next one if closed); the ' +
-        'response says which and why. Date defaults to today; site publishes today-3..+14. stale means the ' +
-        'data is from cache and may be slightly old, but is still the best available; asOf is the age. ' +
-        'Re-call only if you need guaranteed-fresh data. Allergens advisory.',
+        'Get the menu of one dining hall: meals, stations and dishes. Rows: [name, traits, allergens, ' +
+        'mhealthyTier, calories, servingSize, servingSizeGrams] plus nutrients. traits/allergens are codes; ' +
+        'read key. With no meal, the meal being served now is returned (or next if closed). Date defaults to ' +
+        'today; site publishes today-3..+14. stale means expired cache; asOf data age. Allergens advisory.',
       inputSchema: z.strictObject({
         hall: hallIdSchema.describe('The dining hall to read.'),
         date: dateSchema.optional().describe('The day to read. Defaults to today.'),
@@ -527,21 +539,12 @@ export function createServer(): McpServer {
     'filter_dishes',
     {
       title: 'Filter dishes',
-      description:
-        'Filter dining hall menus by allergen, trait, nutrient density, carbon, calories, sodium and name. ' +
-        'All params optional; no params lists every dish for the day. Allergens: alcohol, beef, coconut, eggs, ' +
-        'fish, item-is-deep-fried, milk, oats, peanuts, pork, sesame-seed, shellfish, soy, tree-nuts, ' +
-        'wheat_barley_rye. Traits: glutenfree, halal, kosher, spicy, vegan, vegetarian. min_mhealthy: keep ' +
-        'tiers >= (1-5). max_carbon: keep tiers <= (1 low, 2 medium, 3 high). Untagged dropped by both. ' +
-        'nutrients: range per nutrient, e.g. {"protein":{"min":20,"unit":"g"}}. query: case-insensitive ' +
-        'substring. Rows are arrays: [hall, meal, station, name, traits, allergens, mhealthyTier] plus ' +
-        'carbonFootprint when max_carbon or sort_by carbon, then calories, servingSize, servingSizeGrams, ' +
-        'dates in a range, then nutrients named by include_nutrients. traits are codes 1-6; allergens are ' +
-        'codes; read the key. Station codes in each row resolve via key.stations. Every row already ' +
-        'includes calories, servingSize, and servingSizeGrams. Use include_nutrients to get full nutrition ' +
-        'data in the same call - no need to call get_item_nutrition per dish. stale means the data is from ' +
-        'cache and may be slightly old, but is still the best available; asOf is the age. Re-call only if ' +
-        'you need guaranteed-fresh data. Allergens advisory.',
+       description:
+         'Filter dining hall menus by allergen, trait, nutrient density, carbon, calories, sodium and name. ' +
+         'All params optional. Allergens/traits are slugs; read key for codes. min_mhealthy: keep tiers >= (1-5). ' +
+         'max_carbon: keep tiers <= (1 low, 2 medium, 3 high). nutrients: range per nutrient. query: ' +
+         'case-insensitive substring. Rows are coded arrays; read key. stale means expired cache; asOf data age. ' +
+         'Allergens advisory.',
       inputSchema: z.strictObject({
         exclude_allergens: z
           .array(allergenSchema)
@@ -769,6 +772,30 @@ export function createServer(): McpServer {
       try {
         const { date, weekday, weekly, halls, failures, asOf } = await getHours(hallList(args.hall), args.date);
         return ok({ date, weekday, weekly, halls, failures, asOf });
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    'get_dining_occupancy',
+    {
+      title: 'Dining hall occupancy',
+      description:
+        'Real-time occupancy for monitored dining halls: current count, patron flow, ' +
+        'total capacity, and percent full. Only halls with sensors are returned.',
+
+      inputSchema: z.strictObject({
+        hall: hallIdSchema.optional().describe('Keep only this hall.'),
+      }),
+      outputSchema: diningOccupancyOutput,
+      annotations: READ_ONLY_WORLD,
+    },
+    async (args) => {
+      try {
+        const result = await getDiningOccupancy(args.hall);
+        return ok(result);
       } catch (error) {
         return fail(error);
       }

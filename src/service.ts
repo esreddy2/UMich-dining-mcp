@@ -1536,3 +1536,83 @@ export async function getItemNutrition(
   };
 }
 
+
+const DINING_CAPACITY_URL =
+  'https://prod-michigan-dining-services-prod.apps.containersprod.art2.p1.openshiftapps.com/dining/capacity?key=093665d6ab069c859267fd4001c3c562ba805539ed852978';
+
+export interface DiningOccupancyReading {
+  hall: HallId;
+  hallName: string;
+  current: number | null;
+  patronFlow: number | null;
+  total: number | null;
+  percent: number | null;
+  error: string | null;
+}
+
+export interface DiningOccupancyResult {
+  observedAt: string;
+  readings: DiningOccupancyReading[];
+}
+
+function parseCapacityNumber(value: unknown): number | null {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  if (typeof value !== 'string') return null;
+  const text = value.trim();
+  if (!text) return null;
+  const num = Number(text);
+  return Number.isFinite(num) ? num : null;
+}
+
+function hallForOccupancyName(name: string): DiningHall | undefined {
+  const normalized = name.toLowerCase().replace(/dining hall/g, '').trim().replace(/\s+/g, ' ');
+  return HALLS.find((hall) => hall.name.toLowerCase().replace(/\s+/g, ' ') === normalized);
+}
+
+export async function getDiningOccupancy(requestedHall?: HallId): Promise<DiningOccupancyResult> {
+  const observedAt = new Date().toISOString();
+  let text: string;
+  try {
+    text = await fetchText(DINING_CAPACITY_URL);
+  } catch (error) {
+    throw new ServiceError(
+      error instanceof Error ? error.message : 'The dining capacity service could not be read.',
+    );
+  }
+
+  let payload: { capacity?: unknown[] };
+  try {
+    payload = JSON.parse(text) as { capacity?: unknown[] };
+  } catch {
+    throw new ServiceError('The dining capacity service returned an unreadable response.');
+  }
+
+  const entries = Array.isArray(payload.capacity) ? payload.capacity : [];
+  const readings: DiningOccupancyReading[] = [];
+  for (const entry of entries) {
+    if (!entry || typeof entry !== 'object') continue;
+    const record = entry as Record<string, unknown>;
+    const name = typeof record.name === 'string' ? record.name : '';
+    const hall = hallForOccupancyName(name);
+    if (!hall) continue;
+    if (requestedHall && hall.id !== requestedHall) continue;
+    const current = parseCapacityNumber(record.capacity_count);
+    const patronFlow = parseCapacityNumber(record.patronflow);
+    const total = parseCapacityNumber(record.total);
+    const percent =
+      current !== null && total !== null && total > 0
+        ? Math.round((current / total) * 1000) / 10
+        : null;
+    readings.push({
+      hall: hall.id,
+      hallName: hall.name,
+      current,
+      patronFlow,
+      total,
+      percent,
+      error: typeof record.error === 'string' ? record.error : null,
+    });
+  }
+
+  return { observedAt, readings };
+}
