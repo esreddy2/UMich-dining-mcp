@@ -19,17 +19,6 @@ disk and no menu is mirrored.
 | Halls | the ten dining halls |
 | Registry | [`io.github.esreddy2/umich-dining-mcp`](https://registry.modelcontextprotocol.io) |
 
-## Hosted MCP (no installation required)
-
-The public Streamable HTTP endpoint is:
-
-
-Connect a compatible MCP client directly to this URL.
-No npm installation or GitHub download is needed.
-
-The existing npm package remains available for users who
-prefer running the MCP server locally through stdio.
-
 ## Install
 
 ```bash
@@ -348,16 +337,3 @@ described in [CONTRIBUTING.md](CONTRIBUTING.md).
 ## License
 
 MIT, see [LICENSE](LICENSE).
-
-## Maintainer hosting and updates
-
-The Oracle deployment is separate from the npm package.
-Its NGINX configuration, systemd service and updater are
-maintainer infrastructure, not requirements for MCP users.
-
-See [Oracle hosting and automatic updates](docs/hosting.md).
-
-The optional Oracle updater checks published GitHub tags
-against npm releases, builds and tests new versions, and
-rolls back if the updated service fails its health check.
-Ordinary GitHub commits do not trigger deployments.
