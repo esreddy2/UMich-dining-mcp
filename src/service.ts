@@ -442,6 +442,7 @@ async function loadHallPageFromApi(hall: DiningHall, date: string): Promise<{
   return {
     parsed,
     menuError: null,
+    location: EMPTY_LOCATION,
     periods,
   };
 }
