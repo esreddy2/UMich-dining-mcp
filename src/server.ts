@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod/v4';
-import { HALLS } from './halls.js';
+import { HALLS, resolveHallId } from './halls.js';
 import {
   ALLERGENS,
   ALLERGEN_CAVEAT,
@@ -62,6 +62,7 @@ const READ_ONLY_LOCAL = {
 } as const;
 
 const hallIdSchema = z.enum(HALL_IDS);
+const hallInputSchema = z.string().transform((value) => resolveHallId(value));
 
 /** The halls of a sweep: one hall, a list of them, or none at all. */
 function hallList(hall: string | string[] | undefined): HallId[] | undefined {
@@ -77,7 +78,7 @@ function hallList(hall: string | string[] | undefined): HallId[] | undefined {
  * caller wants, and an empty list means every hall.
  */
 const hallsSchema = z
-  .union([hallIdSchema, z.array(hallIdSchema).max(HALL_IDS.length)])
+  .union([hallInputSchema, z.array(hallInputSchema).max(HALL_IDS.length)])
   .optional()
   .describe('Halls: one, a list, or none for all.');
 const mealNameSchema = z.enum(MEAL_NAMES);
@@ -89,7 +90,23 @@ const mealNameSchema = z.enum(MEAL_NAMES);
  */
 const mealsSchema = z.union([mealNameSchema, z.array(mealNameSchema).min(1)]);
 const allergenSchema = z.enum(ALLERGEN_SLUGS as [string, ...string[]]);
-const traitSchema = z.enum(TRAIT_SLUGS as [string, ...string[]]);
+const TRAIT_ALIASES: Record<string, string> = {
+  gf: 'glutenfree',
+  'gluten-free': 'glutenfree',
+  glutenfree: 'glutenfree',
+  veg: 'vegetarian',
+  vegetarian: 'vegetarian',
+};
+
+const traitSchema = z.string().transform((value) => {
+  const trimmed = value.trim();
+  const key = trimmed.toLowerCase().replace(/[\s-]/g, '');
+  const resolved = TRAIT_ALIASES[key] ?? TRAIT_ALIASES[trimmed.toLowerCase()] ?? trimmed.toLowerCase();
+  if (!TRAIT_SLUGS.includes(resolved as (typeof TRAIT_SLUGS)[number])) {
+    throw new Error(`Unknown trait: ${value}`);
+  }
+  return resolved;
+});
 const carbonSchema = z.number().int().min(1).max(3);
 
 
@@ -263,7 +280,7 @@ const diningOccupancyOutput = z.object({
   readings: z.array(
     z.object({
       hall: hallIdSchema,
-      name: z.string(),
+      hallName: z.string(),
       current: z.number().nullable(),
       patronFlow: z.number().nullable(),
       total: z.number().nullable(),
@@ -419,7 +436,7 @@ export function createServer(): McpServer {
         'out of scope.',
       inputSchema: z.strictObject({
         date: dateSchema.optional().describe('The day to read. Defaults to today.'),
-        hall: hallIdSchema.optional().describe('Keep only this hall.'),
+        hall: hallInputSchema.optional().describe('Keep only this hall.'),
       }),
       outputSchema: listLocationsOutput,
       annotations: READ_ONLY_WORLD,
@@ -462,7 +479,7 @@ export function createServer(): McpServer {
         'read key. With no meal, the meal being served now is returned (or next if closed). Date defaults to ' +
         'today; site publishes today-3..+14. stale means expired cache; asOf data age. Allergens advisory.',
       inputSchema: z.strictObject({
-        hall: hallIdSchema.describe('The dining hall to read.'),
+        hall: hallInputSchema.describe('The dining hall to read.'),
         date: dateSchema.optional().describe('The day to read. Defaults to today.'),
         meal: mealsSchema
           .optional()
@@ -787,14 +804,18 @@ export function createServer(): McpServer {
         'total capacity, and percent full. Only halls with sensors are returned.',
 
       inputSchema: z.strictObject({
-        hall: hallIdSchema.optional().describe('Keep only this hall.'),
+        hall: z
+          .union([hallInputSchema, z.array(hallInputSchema)])
+          .optional()
+          .describe('Keep only this hall, or a list of halls.'),
       }),
       outputSchema: diningOccupancyOutput,
       annotations: READ_ONLY_WORLD,
     },
     async (args) => {
       try {
-        const result = await getDiningOccupancy(args.hall);
+        const requested = args.hall;
+        const result = await getDiningOccupancy(requested);
         return ok(result);
       } catch (error) {
         return fail(error);
@@ -854,7 +875,7 @@ export function createServer(): McpServer {
         "behind it. asOf data age. Allergens advisory. Use this only when you need the full panel for a " +
         "single dish. For multiple dishes, use filter_dishes with include_nutrients instead.",
       inputSchema: z.strictObject({
-        hall: hallIdSchema.describe('The dining hall to read.'),
+        hall: hallInputSchema.describe('The dining hall to read.'),
         item: z.string().min(1).describe('The dish name.'),
         date: dateSchema.optional(),
         meal: mealNameSchema.optional().describe('Narrow the search to one meal.'),

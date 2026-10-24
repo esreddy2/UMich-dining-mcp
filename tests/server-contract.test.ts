@@ -124,7 +124,7 @@ describe('the contract of the server', () => {
   });
 
   it('rejects a hall the site does not have', async () => {
-    for (const hall of ['refectory', 'Bursley', 'bursley ', 'north quad']) {
+    for (const hall of ['refectory', 'totally-unknown', 'xyz123']) {
       const result = (await client.callTool({ name: 'get_menu', arguments: { hall } })) as ToolResult;
       expect(result.isError, hall).toBe(true);
       expect(result.structuredContent, hall).toBeUndefined();
@@ -175,7 +175,7 @@ describe('the contract of the server', () => {
 
     const trait = (await client.callTool({
       name: 'filter_dishes',
-      arguments: { require_traits: ['gluten-free'] },
+      arguments: { require_traits: ['not-a-trait'] },
     })) as ToolResult;
     expect(trait.isError).toBe(true);
   });

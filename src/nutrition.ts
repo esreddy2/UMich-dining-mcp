@@ -48,6 +48,43 @@ export const NUTRIENT_SPECS: NutrientSpec[] = [
 
 export const NUTRIENT_KEYS = NUTRIENT_SPECS.map((s) => s.key);
 
+export const NUTRIENT_ALIASES: Record<string, string> = {
+  cals: 'calories',
+  kcals: 'calories',
+  cal: 'calories',
+  kcal: 'calories',
+  fat: 'totalFat',
+  tf: 'totalFat',
+  satfat: 'saturatedFat',
+  sf: 'saturatedFat',
+  transfat: 'transFat',
+  tfat: 'transFat',
+  chol: 'cholesterol',
+  cholesterol: 'cholesterol',
+  na: 'sodium',
+  salt: 'sodium',
+  carbs: 'totalCarbohydrate',
+  carb: 'totalCarbohydrate',
+  tc: 'totalCarbohydrate',
+  fiber: 'dietaryFiber',
+  df: 'dietaryFiber',
+  sugar: 'sugars',
+  sug: 'sugars',
+  prot: 'protein',
+  p: 'protein',
+  va: 'vitaminA',
+  vita: 'vitaminA',
+  vitamina: 'vitaminA',
+  vc: 'vitaminC',
+  vitc: 'vitaminC',
+  vitaminc: 'vitaminC',
+  ca: 'calcium',
+  calc: 'calcium',
+  fe: 'iron',
+  iron: 'iron',
+};
+
+
 export const MACRO_DAILY_VALUES: Record<string, number> = {
   totalFat: 78,
   saturatedFat: 20,
@@ -278,6 +315,12 @@ export function micronutrientAmount(
 export function resolveNutrientName(name: string): { key: string; micronutrient: MicronutrientSpec | null } | null {
   const trimmed = name.trim();
   const wanted = normalizeNutrientName(trimmed);
+  const aliased = NUTRIENT_ALIASES[wanted];
+  if (aliased) {
+    const micro = micronutrientSpec(aliased);
+    if (micro) return { key: micro.name, micronutrient: micro };
+    return { key: aliased, micronutrient: null };
+  }
   const canonical = NUTRIENT_KEYS.find((key) => normalizeNutrientName(key) === wanted);
   if (canonical) return { key: canonical, micronutrient: null };
   // Accept the published label (e.g. "Total Fat") and field name (e.g. "totalFat").
@@ -333,8 +376,7 @@ export const DEFAULT_SORT_ORDER = 'desc';
  * looks sorted and is not.
  */
 const SORT_ALIASES: Record<string, string> = {
-  fiber: 'dietaryFiber',
-  carbs: 'totalCarbohydrate',
+  ...NUTRIENT_ALIASES,
   carbohydrate: 'totalCarbohydrate',
   carbohydrates: 'totalCarbohydrate',
   proteintocalorie: 'protein:calories',

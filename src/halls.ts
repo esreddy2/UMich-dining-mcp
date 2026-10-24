@@ -146,6 +146,49 @@ export const HALLS: readonly DiningHall[] = [
 
 const BY_ID = new Map<HallId, DiningHall>(HALLS.map((hall) => [hall.id, hall]));
 
+const HALL_ALIASES: Record<string, HallId> = {
+  bursley: 'bursley',
+  east: 'east-quad',
+  eastquad: 'east-quad',
+  markley: 'markley',
+  mosher: 'mosher-jordan',
+  mosherjordan: 'mosher-jordan',
+  mojo: 'mosher-jordan',
+  north: 'north-quad',
+  northquad: 'north-quad',
+  south: 'south-quad',
+  southquad: 'south-quad',
+  twigs: 'twigs-at-oxford',
+  oxford: 'twigs-at-oxford',
+  twigsatoxford: 'twigs-at-oxford',
+  wolverine: 'wolverine-village',
+  village: 'wolverine-village',
+  willage: 'wolverine-village',
+  wolverinevillage: 'wolverine-village',
+  wovlerine: 'wolverine-village',
+  lawyers: 'lawyers-club',
+  lawyer: 'lawyers-club',
+  lawyersclub: 'lawyers-club',
+  martha: 'martha-cook',
+  cook: 'martha-cook',
+  marthacook: 'martha-cook',
+};
+
+function normalizeHallKey(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+export function resolveHallId(value: string): HallId {
+  const key = normalizeHallKey(value);
+  const aliased = HALL_ALIASES[key];
+  if (aliased) return aliased;
+  const byId = HALLS.find((hall) => normalizeHallKey(hall.id) === key);
+  if (byId) return byId.id;
+  const byName = HALLS.find((hall) => normalizeHallKey(hall.name) === key);
+  if (byName) return byName.id;
+  throw new Error(`Unknown dining hall: ${value}`);
+}
+
 export function getHallDefinition(id: HallId): DiningHall {
   const hall = BY_ID.get(id);
   if (!hall) throw new Error(`Unknown dining hall: ${id}`);

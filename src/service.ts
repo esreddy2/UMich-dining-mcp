@@ -1565,16 +1565,32 @@ function parseCapacityNumber(value: unknown): number | null {
 }
 
 function hallForOccupancyName(name: string): DiningHall | undefined {
-  const normalized = name.toLowerCase().replace(/dining hall/g, '').trim().replace(/\s+/g, ' ');
-  return HALLS.find((hall) => hall.name.toLowerCase().replace(/\s+/g, ' ') === normalized);
+  const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const normalized = normalize(name.replace(/dining hall/gi, ''));
+  return HALLS.find((hall) => normalize(hall.name) === normalized);
 }
 
-export async function getDiningOccupancy(requestedHall?: HallId): Promise<DiningOccupancyResult> {
+export async function getDiningOccupancy(requestedHalls?: HallId | HallId[]): Promise<DiningOccupancyResult> {
+  const requested = Array.isArray(requestedHalls) ? requestedHalls : (requestedHalls ? [requestedHalls] : undefined);
   const observedAt = new Date().toISOString();
   let text: string;
   try {
-    text = await fetchText(DINING_CAPACITY_URL);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+    const response = await fetch(DINING_CAPACITY_URL, {
+      headers: {
+        Accept: 'application/json, text/plain, */*',
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+      },
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!response.ok) {
+      throw new ServiceError(`The dining capacity service failed with HTTP ${response.status}.`);
+    }
+    text = await response.text();
   } catch (error) {
+    if (error instanceof ServiceError) throw error;
     throw new ServiceError(
       error instanceof Error ? error.message : 'The dining capacity service could not be read.',
     );
@@ -1595,14 +1611,13 @@ export async function getDiningOccupancy(requestedHall?: HallId): Promise<Dining
     const name = typeof record.name === 'string' ? record.name : '';
     const hall = hallForOccupancyName(name);
     if (!hall) continue;
-    if (requestedHall && hall.id !== requestedHall) continue;
+    if (requested && !requested.includes(hall.id)) continue;
     const current = parseCapacityNumber(record.capacity_count);
     const patronFlow = parseCapacityNumber(record.patronflow);
     const total = parseCapacityNumber(record.total);
-    const percent =
-      current !== null && total !== null && total > 0
-        ? Math.round((current / total) * 1000) / 10
-        : null;
+    // The upstream field named capacity_count is reported by the app as the
+    // percent full, so use it directly rather than deriving count/total.
+    const percent = current;
     readings.push({
       hall: hall.id,
       hallName: hall.name,
