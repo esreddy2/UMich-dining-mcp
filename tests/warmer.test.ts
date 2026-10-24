@@ -46,11 +46,11 @@ describe('the warmer', () => {
 
     const mock = mockFixtureFetch();
     await warm(['markley'], ['2026-10-21'], '2026-10-21');
-    expect(mock.calls).toHaveLength(1);
+    expect(mock.calls).toHaveLength(2);
 
     // A live entry is served from the cache: no second request to the site.
     await warm(['markley'], ['2026-10-21'], '2026-10-21');
-    expect(mock.calls).toHaveLength(1);
+    expect(mock.calls).toHaveLength(2);
   });
 });
 

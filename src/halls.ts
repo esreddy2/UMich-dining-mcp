@@ -189,6 +189,20 @@ export function resolveHallId(value: string): HallId {
   throw new Error(`Unknown dining hall: ${value}`);
 }
 
+
+export const API_LOCATION_NAMES: Record<HallId, string> = {
+  bursley: 'Bursley Dining Hall',
+  'east-quad': 'East Quad Dining Hall',
+  markley: 'Markley Dining Hall',
+  'mosher-jordan': 'Mosher Jordan Dining Hall',
+  'north-quad': 'North Quad Dining Hall',
+  'south-quad': 'South Quad Dining Hall',
+  'twigs-at-oxford': 'Twigs At Oxford',
+  'wolverine-village': 'Wolverine Village Dining Hall',
+  'lawyers-club': 'Lawyers Club Dining Hall',
+  'martha-cook': 'Martha Cook Dining Hall',
+};
+
 export function getHallDefinition(id: HallId): DiningHall {
   const hall = BY_ID.get(id);
   if (!hall) throw new Error(`Unknown dining hall: ${id}`);

@@ -227,6 +227,8 @@ interface FetchOptions {
   signal?: AbortSignal;
   /** Run the request in the background; a live request always goes first. */
   background?: boolean;
+  /** Override the Accept header for this request. */
+  accept?: string;
 }
 
 async function requestText(url: string, options: FetchOptions): Promise<{ status: number; html: string; retryAfterMs: number | null }> {
@@ -245,7 +247,7 @@ async function requestText(url: string, options: FetchOptions): Promise<{ status
     const response = await fetch(url, {
       headers: {
         'User-Agent': options.userAgent ?? currentUserAgent(),
-        Accept: 'text/html,application/xhtml+xml',
+        Accept: options.accept ?? 'text/html,application/xhtml+xml',
         'Accept-Language': 'en-US,en;q=0.9',
       },
       redirect: 'follow',

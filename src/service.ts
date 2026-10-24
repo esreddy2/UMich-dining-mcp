@@ -2,14 +2,14 @@ import { config } from './config.js';
 import { cache } from './cache.js';
 import { dayIn, minutesIn } from './clock.js';
 import { fetchText, HttpError } from './http.js';
-import { HALLS, REGULAR_HOURS_PATH, getHallDefinition } from './halls.js';
+import { HALLS, REGULAR_HOURS_PATH, getHallDefinition, API_LOCATION_NAMES } from './halls.js';
 import { parseLocationDetails, type LocationDetails } from './parser/location.js';
 import { parseMenuPage, ParseError, type ParsedMenu, MEAL_BY_LABEL } from './parser/menu.js';
 import { parseRegularHours, parseTimeRange, parseTodaysHours } from './parser/hours.js';
 import { load } from 'cheerio';
 import { MEAL_NAMES, type DiningHall, type HallId, type HallHours, type LocationSummary, type MealName, type Menu, type RegularHours, type ServicePeriod, type Station, type Nutrition, type CarbonLevel } from './types.js';
 import { HALL_CODES, TRAIT_CODES, ALLERGEN_CODES, createKeyBuilder, buildKey, mealCode, stationCode } from './codes.js';
-import { ALLERGEN_REMINDER } from './taxonomy.js';
+import { ALLERGEN_REMINDER, TRAITS, TRAIT_IMPLICATIONS, ALLERGENS } from './taxonomy.js';
 import {
   MICRONUTRIENT_SPECS,
   NUTRIENT_SPECS,
@@ -259,6 +259,193 @@ export class Deadline {
   }
 }
 
+
+const API_BASE = 'https://prod-michigan-dining-services-prod.apps.containersprod.art2.p1.openshiftapps.com';
+const API_KEY = '093665d6ab069c859267fd4001c3c562ba805539ed852978';
+
+function apiDate(iso: string): string {
+  const [y, m, d] = iso.split('-');
+  return `${d}-${m}-${y}`;
+}
+
+function allergenSlug(value: string): string | null {
+  const wanted = value.trim().toLowerCase();
+  for (const [slug, label] of Object.entries(ALLERGENS)) {
+    if (slug.toLowerCase() === wanted || label.toLowerCase() === wanted) return slug;
+  }
+  return null;
+}
+
+function apiTraits(attributes: string[]): {
+  traits: string[];
+  traitLabels: Record<string, string>;
+  mhealthyTier: number | null;
+  carbonFootprint: CarbonLevel | null;
+} {
+  const traits: string[] = [];
+  const traitLabels: Record<string, string> = {};
+  let mhealthyTier: number | null = null;
+  let carbonFootprint: CarbonLevel | null = null;
+  for (const attr of attributes) {
+    if (attr.startsWith('mhealthy')) {
+      const tier = Number(attr.slice(7));
+      if (Number.isFinite(tier)) mhealthyTier = tier;
+    } else if (attr.startsWith('carbon')) {
+      carbonFootprint = attr === 'carbonlow' ? 1 : attr === 'carbonmedium' ? 2 : 3;
+    } else if (attr in TRAITS) {
+      if (!traits.includes(attr)) {
+        traits.push(attr);
+        traitLabels[attr] = TRAITS[attr as keyof typeof TRAITS];
+      }
+    }
+  }
+  for (const [trait, implies] of Object.entries(TRAIT_IMPLICATIONS)) {
+    if (traits.includes(trait)) {
+      for (const implied of implies) {
+        if (!traits.includes(implied)) {
+          traits.push(implied);
+          traitLabels[implied] = TRAITS[implied as keyof typeof TRAITS];
+        }
+      }
+    }
+  }
+  return { traits, traitLabels, mhealthyTier, carbonFootprint };
+}
+
+function apiNutritionToNutrition(nutrition: { name: string; value: string; percentDailyValue?: string }[], servingSize: string | null): Nutrition {
+  const get = (name: string) => nutrition.find((n) => n.name === name)?.value ?? null;
+  const micronutrients: Record<string, string> = {};
+  for (const n of nutrition) {
+    if (['Vitamin A', 'Vitamin C', 'Calcium', 'Iron'].includes(n.name) && n.percentDailyValue != null) {
+      micronutrients[n.name] = `${n.percentDailyValue}%`;
+    }
+  }
+  return {
+    servingSize,
+    calories: parseNutritionNumber(get('Calories'), 'calories'),
+    totalFat: get('Total Fat'),
+    saturatedFat: get('Saturated Fat'),
+    transFat: get('Trans Fat'),
+    cholesterol: get('Cholesterol'),
+    sodium: get('Sodium'),
+    totalCarbohydrate: get('Total Carbohydrate'),
+    dietaryFiber: get('Dietary Fiber'),
+    sugars: get('Sugars'),
+    protein: get('Protein'),
+    micronutrients,
+  };
+}
+
+async function fetchApiJson(path: string): Promise<unknown> {
+  const url = `${API_BASE}${path}`;
+  const text = await fetchText(url, { accept: 'application/json' });
+  return JSON.parse(text);
+}
+
+async function loadHallPageFromApi(hall: DiningHall, date: string): Promise<{
+  parsed: ParsedMenu;
+  menuError: null;
+  location: LocationDetails;
+  periods: ServicePeriod[];
+}> {
+  const apiName = API_LOCATION_NAMES[hall.id];
+  const apiDateStr = apiDate(date);
+  let apiAvailable = true;
+  await fetchApiJson(
+    `/dining/menu?key=${API_KEY}&location=${encodeURIComponent(apiName)}&date=${apiDateStr}&meal=BREAKFAST`,
+  ).catch(() => {
+    apiAvailable = false;
+    return null;
+  });
+  if (!apiAvailable) throw new ServiceError('The dining API could not be read.');
+
+  // The API is meal-specific; fetch all meals in parallel.
+  const mealNames: MealName[] = ['Breakfast', 'Brunch', 'Lunch', 'Dinner'];
+  const apiMeals: Record<MealName, { name: string; items: Parameters<typeof toDishMatch>[4][] }[]> = {
+    Breakfast: [],
+    Brunch: [],
+    Lunch: [],
+    Dinner: [],
+  };
+  const mealLabels: Partial<Record<MealName, string>> = {};
+  const otherMeals: { label: string; stations: { name: string; items: Parameters<typeof toDishMatch>[4][] }[] }[] = [];
+  const unknownMealLabels: string[] = [];
+
+  await Promise.all(
+    mealNames.map(async (meal) => {
+      try {
+        const json = await fetchApiJson(
+          `/dining/menu?key=${API_KEY}&location=${encodeURIComponent(apiName)}&date=${apiDateStr}&meal=${meal.toUpperCase()}`,
+        );
+        const stations: { name: string; items: Parameters<typeof toDishMatch>[4][] }[] = [];
+        for (const cat of (json as { menu?: { category?: unknown[] } })?.menu?.category ?? []) {
+          const items: Parameters<typeof toDishMatch>[4][] = [];
+          for (const it of (cat as { menuItem?: unknown[] }).menuItem ?? []) {
+            const rec = it as { attribute?: unknown[]; allergens?: unknown[]; itemSizes?: { nutrition?: unknown[]; serving_size?: string | number | null }; name?: string | number | null };
+            const { traits, traitLabels, mhealthyTier, carbonFootprint } = apiTraits((rec.attribute ?? []) as string[]);
+            const allergens = (rec.allergens ?? []).map((a: unknown) => allergenSlug(String(a))).filter(Boolean) as string[];
+            const servingSize = rec.itemSizes?.serving_size;
+            const nutrition = apiNutritionToNutrition((rec.itemSizes?.nutrition ?? []) as { name: string; value: string; percentDailyValue?: string }[], servingSize == null ? null : (typeof servingSize === 'string' ? servingSize : String(servingSize)));
+            items.push({
+              name: String(rec.name),
+              traits,
+              traitLabels,
+              allergens,
+              mhealthyTier,
+              carbonFootprint,
+              nutrition,
+            });
+          }
+          const catName = (cat as { name?: unknown }).name;
+          stations.push({ name: typeof catName === 'string' ? catName : 'Station', items });
+        }
+        if (stations.length > 0 && stations.some((s) => s.items.length > 0)) {
+          apiMeals[meal] = stations;
+          mealLabels[meal] = meal;
+        }
+      } catch {
+        // Meal not served or fetch failed; leave empty.
+      }
+    }),
+  );
+
+  // Meal hours for periods.
+  let periods: ServicePeriod[] = []; // eslint-disable-line no-useless-assignment
+  try {
+    const hoursJson = await fetchApiJson(
+      `/dining/meal-hours?key=${API_KEY}&location=${encodeURIComponent(apiName)}&date=${apiDateStr}`,
+    );
+    periods = (((hoursJson as { meal?: unknown[] } | null)?.meal) ?? [])
+      .filter((m: unknown) => typeof (m as { hours?: unknown }).hours === 'string' && String((m as { hours: string }).hours).trim() !== '')
+      .map((m: unknown) => {
+        const rec = m as { name?: unknown; hours: string };
+        const rawName = rec.name;
+        const name = typeof rawName === 'string' ? rawName : '';
+        const label = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+        return { label, times: rec.hours };
+      });
+  } catch {
+    periods = [];
+  }
+
+  const parsed: ParsedMenu = {
+    meals: apiMeals,
+    mealLabels,
+    otherMeals,
+    unknownMealLabels,
+    noMenu: Object.values(apiMeals).every((s) => s.length === 0 || s.every((st) => st.items.length === 0)),
+    itemCount: Object.values(apiMeals).reduce((n, sts) => n + sts.reduce((m, st) => m + st.items.length, 0), 0),
+    stationCount: Object.values(apiMeals).reduce((n, sts) => n + sts.length, 0),
+    renderedDate: date,
+  };
+
+  return {
+    parsed,
+    menuError: null,
+    periods,
+  };
+}
+
 export async function loadHallPage(
   hallId: HallId,
   date: string,
@@ -273,6 +460,14 @@ export async function loadHallPage(
     key,
     ttl,
     async () => {
+      // Prefer the private JSON API when it is available; fall back to the
+      // scraper when it fails or is blocked.
+      try {
+        return await loadHallPageFromApi(hall, date);
+      } catch {
+        // Fall through to the scraping path below.
+      }
+
       // A request never outlives the budget of the call that asked for it.
       const controller = new AbortController();
       const budget = options.deadline?.remainingMs ?? config.timeoutMs;
