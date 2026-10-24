@@ -56,6 +56,8 @@ export function loadHttpSettings(env: NodeJS.ProcessEnv = process.env): HttpSett
   return {
     host: env['UMICH_MCP_HTTP_HOST'] ?? '127.0.0.1',
     port: positiveInt(env, 'UMICH_MCP_HTTP_PORT', 8080, 65535),
+    allowedHosts: hostList(env['UMICH_MCP_ALLOWED_HOSTS'] ?? 'localhost'),
+    allowedOrigins: hostList(env['UMICH_MCP_ALLOWED_ORIGINS'] ?? 'localhost'),
     trustProxy: env['UMICH_MCP_TRUST_PROXY'] === '1',
     // The budget of one client. It sits above the one of the reverse proxy in
     // front of it, so that the proxy's limit is the one a client meets and

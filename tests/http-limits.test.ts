@@ -6,7 +6,7 @@ describe('HTTP configuration', () => {
   it('defaults to loopback and a single approved hostname', () => {
     const settings = loadHttpSettings({});
     expect(settings.host).toBe('127.0.0.1');
-    expect(settings.allowedHosts).toEqual(['umich-dining-mcp.duckdns.org']);
+    expect(settings.allowedHosts).toEqual(['localhost']);
     expect(settings.trustProxy).toBe(false);
     expect(settings.bearerTokenSha256).toBeUndefined();
   });

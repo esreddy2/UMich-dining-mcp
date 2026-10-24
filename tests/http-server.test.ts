@@ -6,7 +6,7 @@ import { request as nodeRequest } from 'node:http';
 import { createHttpApp } from '../src/http-server.js';
 import { loadHttpSettings } from '../src/http-settings.js';
 
-const HOST = 'umich-dining-mcp.duckdns.org';
+const HOST = 'localhost';
 
 describe('public HTTP transport', () => {
   const app = createHttpApp(loadHttpSettings({

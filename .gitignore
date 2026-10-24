@@ -25,3 +25,7 @@ npm-debug.log*
 # Python leftovers from the research scripts
 __pycache__/
 *.pyc
+
+# Private deployment (kept local only)
+deploy/oracle/
+docs/hosting.md
