@@ -7,7 +7,7 @@ import { Client, InMemoryTransport } from '@modelcontextprotocol/client';
 import { cache } from '../src/cache.js';
 import { createServer } from '../src/server.js';
 import { todayIn } from '../src/service.js';
-import { mockFixtureFetch, readFixture } from './helpers.js';
+import { mockFixtureFetch, readFixture, withDeclaredDate } from './helpers.js';
 
 /**
  * The test-coverage gaps of the extensive findings.
@@ -166,21 +166,19 @@ describe('the notes of a sweep answer', () => {
   });
 
   it('names a meal label the site published that it cannot parse', async () => {
+    const today = todayIn();
     vi.stubGlobal('fetch', async (input: string | URL | Request): Promise<Response> => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
       if (url.includes('regularhours')) {
         return new Response(readFixture('regularhours.html'), { status: 200 });
       }
       const body = readFixture('supper.html');
-      return new Response(body.replace(
-        /(<span class="date">)[^<]*(<\/span>)/,
-        '$1Thursday, October 22, 2026$2',
-      ), { status: 200 });
+      return new Response(withDeclaredDate(body, today), { status: 200 });
     });
 
     const result = (await client.callTool({
       name: 'filter_dishes',
-      arguments: { hall: 'bursley', date: '2026-10-22' },
+      arguments: { hall: 'bursley', date: today },
     })) as { structuredContent?: { note?: string; totalMatches: number } };
 
     expect(result.structuredContent?.note).toMatch(/cannot parse/);

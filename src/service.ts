@@ -586,7 +586,7 @@ export async function getMenu(
   meal?: MealName | MealName[],
   now: Date = new Date(),
 ): Promise<HallPage> {
-  const today = todayIn();
+  const today = todayIn(config.timezone, now);
   const requested = date ?? today;
   validateDate(requested, today);
 
@@ -1808,12 +1808,17 @@ export async function getDiningOccupancy(requestedHalls?: HallId | HallId[]): Pr
     const hall = hallForOccupancyName(name);
     if (!hall) continue;
     if (requested && !requested.includes(hall.id)) continue;
-    const current = parseCapacityNumber(record.capacity_count);
+    const rawPercent = parseCapacityNumber(record.capacity_count);
     const patronFlow = parseCapacityNumber(record.patronflow);
     const total = parseCapacityNumber(record.total);
-    // The upstream field named capacity_count is reported by the app as the
-    // percent full, so use it directly rather than deriving count/total.
-    const percent = current;
+    // The upstream field named `capacity_count` was verified against the official
+    // Michigan app to be the percentage full (e.g. "20" means 20% full), not the
+    // raw headcount. Estimated current headcount is derived from percent and total capacity.
+    const percent = rawPercent;
+    const current =
+      percent !== null && total !== null && total > 0
+        ? Math.round((percent / 100) * total)
+        : null;
     readings.push({
       hall: hall.id,
       hallName: hall.name,

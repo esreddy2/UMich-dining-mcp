@@ -6,6 +6,7 @@ import {
   countItems,
   filterDishes,
   findOpenNow,
+  getDiningOccupancy,
   getHours,
   getItemNutrition,
   getMenu,
@@ -546,5 +547,62 @@ describe('the nutrition panel of a dish', () => {
 
   it('rejects an empty name', async () => {
     await expect(getItemNutrition('bursley', '  ')).rejects.toThrow(ServiceError);
+  });
+});
+
+describe('dining occupancy parsing', () => {
+  it('parses capacity_count as percent and derives current headcount from total', async () => {
+    const mockCapacity = JSON.stringify({
+      capacity: [
+        {
+          name: 'Bursley Dining Hall',
+          capacity_count: '20',
+          patronflow: '752',
+          total: '140',
+          error: 'no errors',
+        },
+      ],
+    });
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn().mockResolvedValue(new Response(mockCapacity, { status: 200 }));
+
+    try {
+      const result = await getDiningOccupancy('bursley');
+      expect(result.readings).toHaveLength(1);
+      const reading = result.readings[0]!;
+      expect(reading.hall).toBe('bursley');
+      // capacity_count is confirmed to be the percentage full (20%)
+      expect(reading.percent).toBe(20);
+      expect(reading.total).toBe(140);
+      // current headcount is 20% of 140 = 28
+      expect(reading.current).toBe(28);
+      expect(reading.patronFlow).toBe(752);
+      expect(reading.error).toBe('no errors');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it('filters by requested hall', async () => {
+    const mockCapacity = JSON.stringify({
+      capacity: [
+        { name: 'Bursley Dining Hall', capacity_count: '15', total: '100' },
+        { name: 'East Quad Dining Hall', capacity_count: '30', total: '200' },
+      ],
+    });
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn().mockResolvedValue(new Response(mockCapacity, { status: 200 }));
+
+    try {
+      const result = await getDiningOccupancy('east-quad');
+      expect(result.readings).toHaveLength(1);
+      expect(result.readings[0]!.hall).toBe('east-quad');
+      expect(result.readings[0]!.percent).toBe(30);
+      expect(result.readings[0]!.current).toBe(60);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });

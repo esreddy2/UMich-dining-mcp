@@ -38,7 +38,7 @@ import { STATION_NAMES, TRAIT_CODES } from './codes.js';
 import { HALL_IDS, MEAL_NAMES, type HallId } from './types.js';
 
 const SERVER_NAME = 'umich-dining-mcp';
-const SERVER_VERSION = '0.2.0';
+const SERVER_VERSION = '2.0.0';
 
 /**
  * The annotations of a tool that only reads.
