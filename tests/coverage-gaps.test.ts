@@ -124,19 +124,19 @@ describe('the notes of a sweep answer', () => {
       const body = readFixture('no-menu.html');
       return new Response(body.replace(
         /(<span class="date">)[^<]*(<\/span>)/,
-        '$1Saturday, October 24, 2026$2',
+        '$1' + todayIn() + '$2',
       ), { status: 200 });
     });
 
     const result = (await client.callTool({
       name: 'filter_dishes',
-      arguments: { hall: 'bursley', date: '2026-10-24' },
+      arguments: { hall: 'bursley', date: todayIn() },
     })) as { structuredContent?: { noMenu?: { hall: string; date: string }[]; note?: string; totalMatches: number } };
 
     const payload = result.structuredContent!;
-    expect(payload.noMenu).toEqual([{ hall: 'bursley', date: '2026-10-24' }]);
+    expect(payload.noMenu).toEqual([{ hall: 'bursley', date: todayIn() }]);
     expect(payload.totalMatches).toBe(0);
-    expect(payload.note).toMatch(/No menu published at: 2026-10-24/);
+    expect(payload.note).toMatch(new RegExp('No menu published at: ' + todayIn()));
   });
 
   it('does not say a day carried no menu when a filter matched nothing', async () => {

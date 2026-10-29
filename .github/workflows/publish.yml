@@ -7,6 +7,12 @@ name: Publish
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (must match package.json). Leave blank to use package.json.'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -29,12 +35,20 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm test
-      - name: The version of the tag
+      - name: The version to publish
         id: version
         run: |
-          version="${GITHUB_REF_NAME#v}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ -n "${{ github.event.inputs.version }}" ]; then
+              version="${{ github.event.inputs.version }}"
+            else
+              version="$(node -p "require('./package.json').version")"
+            fi
+          else
+            version="${GITHUB_REF_NAME#v}"
+          fi
           if [ "$(node -p "require('./package.json').version")" != "${version}" ]; then
-            echo "The tag ${GITHUB_REF_NAME} and the version in package.json do not match."
+            echo "The version ${version} and the version in package.json do not match."
             exit 1
           fi
           echo "version=${version}" >> "$GITHUB_OUTPUT"

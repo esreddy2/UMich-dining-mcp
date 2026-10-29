@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { parseMenuPage, extractDeclaredDate } from '../src/parser/menu.js';
 import { load } from 'cheerio';
 import { cache } from '../src/cache.js';
-import { filterDishes, getMenu } from '../src/service.js';
+import { filterDishes, getMenu, todayIn } from '../src/service.js';
 import { readFixture, withDeclaredDate } from './helpers.js';
 
 /**
@@ -94,14 +94,14 @@ describe('a meal the sweep has to reach', () => {
         return new Response(readFixture('regularhours.html'), { status: 200 });
       }
       const body = readFixture('brunch.html');
-      return new Response(withDeclaredDate(body, '2026-10-24'), { status: 200 });
+      return new Response(withDeclaredDate(body, todayIn()), { status: 200 });
     });
   }
 
   it('finds the Brunch dishes in a sweep', async () => {
     serveBrunch();
 
-    const result = await filterDishes({ halls: ['bursley'], date: '2026-10-24' });
+    const result = await filterDishes({ halls: ['bursley'], date: todayIn() });
 
     expect(result.failures).toHaveLength(0);
     expect(result.totalMatches).toBe(5);
@@ -111,7 +111,7 @@ describe('a meal the sweep has to reach', () => {
   it('narrows a sweep to one meal, Brunch included', async () => {
     serveBrunch();
 
-    const result = await filterDishes({ halls: ['bursley'], date: '2026-10-24', meal: 'Brunch' });
+    const result = await filterDishes({ halls: ['bursley'], date: todayIn(), meal: 'Brunch' });
 
     expect(result.totalMatches).toBe(3);
     for (const match of result.matches) {
@@ -126,10 +126,10 @@ describe('a meal the sweep has to reach', () => {
         return new Response(readFixture('regularhours.html'), { status: 200 });
       }
       const body = readFixture('brunch-only.html');
-      return new Response(withDeclaredDate(body, '2026-10-25'), { status: 200 });
+      return new Response(withDeclaredDate(body, todayIn()), { status: 200 });
     });
 
-    const page = await getMenu('bursley', '2026-10-25', 'Brunch');
+    const page = await getMenu('bursley', todayIn(), 'Brunch');
     expect(page.menu.meals.Brunch).toHaveLength(2);
   });
 
@@ -140,12 +140,12 @@ describe('a meal the sweep has to reach', () => {
         return new Response(readFixture('regularhours.html'), { status: 200 });
       }
       const body = readFixture('no-menu.html');
-      return new Response(withDeclaredDate(body, '2026-10-25'), { status: 200 });
+      return new Response(withDeclaredDate(body, todayIn()), { status: 200 });
     });
 
-    const result = await filterDishes({ halls: ['bursley'], date: '2026-10-25' });
+    const result = await filterDishes({ halls: ['bursley'], date: todayIn() });
     expect(result.failures).toHaveLength(0);
     expect(result.totalMatches).toBe(0);
-    expect(result.noMenu).toEqual([{ hall: 'bursley', date: '2026-10-25' }]);
+    expect(result.noMenu).toEqual([{ hall: 'bursley', date: todayIn() }]);
   });
 });

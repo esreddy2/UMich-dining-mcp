@@ -2,6 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Client, InMemoryTransport } from '@modelcontextprotocol/client';
 import { cache } from '../src/cache.js';
 import { createServer } from '../src/server.js';
+import { todayIn } from '../src/service.js';
 import { mockFixtureFetch, readFixture, withDeclaredDate } from './helpers.js';
 
 function resourceText(result: { contents: unknown[] }): string {
@@ -143,9 +144,9 @@ describe('server', () => {
         return new Response(readFixture('regularhours.html'), { status: 200 });
       }
       const body = readFixture('brunch-only.html');
-      return new Response(withDeclaredDate(body, '2026-10-25'), { status: 200 });
+      return new Response(withDeclaredDate(body, todayIn()), { status: 200 });
     });
-    const result = await client.callTool({ name: 'get_menu', arguments: { hall: 'bursley', meal: 'Brunch', date: '2026-10-25' } });
+    const result = await client.callTool({ name: 'get_menu', arguments: { hall: 'bursley', meal: 'Brunch', date: todayIn() } });
     expect(result.isError).toBeFalsy();
     const payload = result.structuredContent as {
       meals: { meal: number; stations: { items: unknown[] }[] }[];
