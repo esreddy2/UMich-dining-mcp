@@ -8,12 +8,12 @@
     "id": "1427583950",
     "url": "https://github.com/esreddy2/UMich-dining-mcp"
   },
-  "version": "0.2.0",
+  "version": "2.0.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "umich-dining-mcp",
-      "version": "0.2.0",
+      "version": "2.0.0",
       "transport": {
         "type": "stdio"
       },
@@ -23,7 +23,7 @@
   "remotes": [
     {
       "type": "streamable-http",
-      "url": "http://localhost:8080/mcp"
+      "url": "https://umich-dining-mcp.duckdns.org/mcp"
     }
   ]
 }
